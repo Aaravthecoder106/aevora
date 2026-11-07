@@ -1,69 +1,126 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import React, { useState, useEffect } from "react";
+import { ActiveChallengeBanner } from "@/components/challenges/ActiveChallengeBanner";
+import { ShipComposer } from "@/components/feed/ShipComposer";
+import { ShipCard } from "@/components/feed/ShipCard";
+import { FeedFilter, FilterMode } from "@/components/feed/FeedFilter";
+import { Challenge, ShipLog } from "@/lib/supabase/types";
+import { SEED_CHALLENGES, SEED_SHIP_LOGS } from "@/lib/data/initialData";
+import { createClient } from "@/lib/supabase/client";
+import { motion } from "framer-motion";
+import { Sparkles, Terminal, Activity, Layers } from "lucide-react";
+
+export default function HomePage() {
+  const [challenges, setChallenges] = useState<Challenge[]>(SEED_CHALLENGES);
+  const [logs, setLogs] = useState<ShipLog[]>(SEED_SHIP_LOGS);
+  const [filter, setFilter] = useState<FilterMode>("latest");
+  const [selectedChallengeId, setSelectedChallengeId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const supabase = createClient();
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        // Fetch challenges
+        const { data: dbChallenges } = await supabase
+          .from("challenges")
+          .select("*, winner:profiles(*)")
+          .order("created_at", { ascending: false });
+
+        if (dbChallenges && dbChallenges.length > 0) {
+          setChallenges(dbChallenges as any);
+        }
+
+        // Fetch ship logs
+        const { data: dbLogs } = await supabase
+          .from("ship_logs")
+          .select("*, author:profiles(*), challenge:challenges(*)")
+          .order("created_at", { ascending: false });
+
+        if (dbLogs && dbLogs.length > 0) {
+          // Merge with initial rich seed logs so community always looks active
+          const existingIds = new Set(dbLogs.map((l: any) => l.id));
+          const merged = [
+            ...dbLogs,
+            ...SEED_SHIP_LOGS.filter((sl) => !existingIds.has(sl.id)),
+          ];
+          setLogs(merged as any);
+        }
+      } catch (err) {
+        console.warn("Using local proof-of-work feed fallback:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadData();
+  }, []);
+
+  const handleShipSuccess = (newLog: ShipLog) => {
+    setLogs([newLog, ...logs]);
+  };
+
+  const handleUpvoteToggle = (logId: string, newUpvoted: boolean, newCount: number) => {
+    setLogs(
+      logs.map((l) =>
+        l.id === logId
+          ? { ...l, user_has_upvoted: newUpvoted, upvotes_count: newCount }
+          : l
+      )
+    );
+  };
+
+  const handleQuickShipToChallenge = (challengeId: string) => {
+    setSelectedChallengeId(challengeId);
+    window.scrollTo({ top: 120, behavior: "smooth" });
+  };
+
+  const sortedLogs = [...logs].sort((a, b) => {
+    if (filter === "top") {
+      return (b.upvotes_count || 0) - (a.upvotes_count || 0);
+    }
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
+  const activeChallenge = challenges.find((c) => c.status === "active") || challenges[0];
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="max-w-3xl mx-auto px-4 py-8">
+      {/* Top Banner: Active Challenge */}
+      {activeChallenge && (
+        <ActiveChallengeBanner
+          challenge={activeChallenge}
+          onQuickShipClick={handleQuickShipToChallenge}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      )}
+
+      {/* Quick-Ship Composer */}
+      <ShipComposer
+        challenges={challenges.filter((c) => c.status === "active")}
+        onShipSuccess={handleShipSuccess}
+        selectedChallengeId={selectedChallengeId}
+        onClearChallenge={() => setSelectedChallengeId(null)}
+      />
+
+      {/* Feed Filter (Latest vs Top Shipped) */}
+      <FeedFilter
+        currentFilter={filter}
+        onFilterChange={setFilter}
+        count={sortedLogs.length}
+      />
+
+      {/* Live Activity Stream */}
+      <div className="space-y-4">
+        {sortedLogs.map((log) => (
+          <ShipCard
+            key={log.id}
+            log={log}
+            onUpvoteToggle={handleUpvoteToggle}
+          />
+        ))}
+      </div>
     </div>
   );
 }
