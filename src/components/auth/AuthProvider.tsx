@@ -4,7 +4,6 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { Profile } from "@/lib/supabase/types";
-import { SEED_PROFILES } from "@/lib/data/initialData";
 
 interface AuthContextType {
   user: User | null;
@@ -13,7 +12,7 @@ interface AuthContextType {
   isLoading: boolean;
   signInWithGithub: () => Promise<void>;
   signInWithDiscord: () => Promise<void>;
-  signInAsDemo: (profileKey?: keyof typeof SEED_PROFILES) => void;
+  signInWithOtp: (email: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -25,7 +24,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   signInWithGithub: async () => {},
   signInWithDiscord: async () => {},
-  signInAsDemo: () => {},
+  signInWithOtp: async () => ({ error: null }),
   signOut: async () => {},
   refreshProfile: async () => {},
 });
@@ -36,25 +35,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const supabase = createClient();
-
-  // Load demo user if set in localStorage
-  useEffect(() => {
-    const demoUser = localStorage.getItem("remorph_demo_user");
-    if (demoUser && SEED_PROFILES[demoUser]) {
-      const demoProfile = SEED_PROFILES[demoUser];
-      setProfile(demoProfile);
-      setUser({
-        id: demoProfile.id,
-        email: `${demoProfile.username}@remorph.build`,
-        user_metadata: {
-          username: demoProfile.username,
-          full_name: demoProfile.full_name,
-          avatar_url: demoProfile.avatar_url,
-        },
-      } as any);
-      setIsLoading(false);
-    }
-  }, []);
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -89,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         setUser(session.user);
         fetchProfile(session.user.id);
-      } else if (!localStorage.getItem("remorph_demo_user")) {
+      } else {
         setUser(null);
         setProfile(null);
       }
@@ -100,7 +80,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signInWithGithub = async () => {
-    localStorage.removeItem("remorph_demo_user");
     await supabase.auth.signInWithOAuth({
       provider: "github",
       options: {
@@ -110,7 +89,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithDiscord = async () => {
-    localStorage.removeItem("remorph_demo_user");
     await supabase.auth.signInWithOAuth({
       provider: "discord",
       options: {
@@ -119,23 +97,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const signInAsDemo = (profileKey: keyof typeof SEED_PROFILES = "alex_volt") => {
-    const demoProfile = SEED_PROFILES[profileKey];
-    localStorage.setItem("remorph_demo_user", profileKey);
-    setProfile(demoProfile);
-    setUser({
-      id: demoProfile.id,
-      email: `${demoProfile.username}@remorph.build`,
-      user_metadata: {
-        username: demoProfile.username,
-        full_name: demoProfile.full_name,
-        avatar_url: demoProfile.avatar_url,
+  const signInWithOtp = async (email: string) => {
+    const res = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
-    } as any);
+    });
+    return { error: res.error };
   };
 
   const signOut = async () => {
-    localStorage.removeItem("remorph_demo_user");
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
@@ -157,7 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         signInWithGithub,
         signInWithDiscord,
-        signInAsDemo,
+        signInWithOtp,
         signOut,
         refreshProfile,
       }}

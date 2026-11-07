@@ -60,11 +60,7 @@ function ChallengeDetailContent() {
         if (dbLogs && dbLogs.length > 0) {
           setSubmissions(dbLogs as any);
         } else {
-          // Filter seed logs
-          const matchingSeedLogs = SEED_SHIP_LOGS.filter(
-            (log) => log.challenge_id === activeChallenge.id
-          );
-          setSubmissions(matchingSeedLogs);
+          setSubmissions([]);
         }
       } catch (err) {
         console.warn("Using fallback challenge data:", err);

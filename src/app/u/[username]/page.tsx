@@ -33,31 +33,21 @@ function BuilderProfileContent() {
 
         let currentProfile: Profile | null = (dbProfile as any) || null;
 
-        if (!currentProfile) {
-          // Check seed profiles
-          const found = Object.values(SEED_PROFILES).find(
-            (p) => p.username.toLowerCase() === username.toLowerCase()
-          );
-          currentProfile = found || SEED_PROFILES.alex_volt;
-        }
-
         setProfile(currentProfile);
 
-        // Fetch logs by author
-        const { data: dbLogs } = await supabase
-          .from("ship_logs")
-          .select("*, author:profiles(*), challenge:challenges(*)")
-          .eq("author_id", currentProfile.id)
-          .order("created_at", { ascending: false });
+        if (currentProfile) {
+          // Fetch logs by author
+          const { data: dbLogs } = await supabase
+            .from("ship_logs")
+            .select("*, author:profiles(*), challenge:challenges(*)")
+            .eq("author_id", currentProfile.id)
+            .order("created_at", { ascending: false });
 
-        if (dbLogs && dbLogs.length > 0) {
-          setLogs(dbLogs as any);
-        } else {
-          // Fallback to seed logs for this author
-          const seedAuthorLogs = SEED_SHIP_LOGS.filter(
-            (l) => l.author?.username.toLowerCase() === username.toLowerCase()
-          );
-          setLogs(seedAuthorLogs.length > 0 ? seedAuthorLogs : SEED_SHIP_LOGS.slice(0, 1));
+          if (dbLogs && dbLogs.length > 0) {
+            setLogs(dbLogs as any);
+          } else {
+            setLogs([]);
+          }
         }
       } catch (err) {
         console.warn("Using fallback builder profile:", err);
@@ -73,8 +63,23 @@ function BuilderProfileContent() {
 
   if (!profile) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-16 text-center">
-        <p className="text-zinc-500 font-mono text-sm">Locating builder in registry...</p>
+      <div className="max-w-3xl mx-auto px-4 py-20 text-center">
+        <div className="glass-panel rounded-2xl p-8 border border-white/[0.08] max-w-md mx-auto">
+          <div className="w-12 h-12 rounded-xl bg-zinc-800/80 border border-zinc-700 flex items-center justify-center text-zinc-400 mx-auto mb-4 font-mono text-lg">
+            ?
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">Builder Not Found</h2>
+          <p className="text-sm text-zinc-400 mb-6">
+            No registered proof-of-work builder with the handle <span className="font-mono text-emerald-400">@{username}</span> was found.
+          </p>
+          <Link
+            href="/feed"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono uppercase tracking-wider transition-all"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Return to Live Feed</span>
+          </Link>
+        </div>
       </div>
     );
   }

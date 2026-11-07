@@ -42,7 +42,17 @@ export function Navbar() {
                     : "text-zinc-400 hover:text-white hover:bg-white/[0.03]"
                 }`}
               >
-                Feed
+                Overview
+              </Link>
+              <Link
+                href="/feed"
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  pathname.startsWith("/feed")
+                    ? "text-white bg-white/[0.08] shadow-sm"
+                    : "text-zinc-400 hover:text-white hover:bg-white/[0.03]"
+                }`}
+              >
+                Live Feed
               </Link>
               <Link
                 href="/challenges"
@@ -54,8 +64,8 @@ export function Navbar() {
               >
                 <Trophy className="w-3.5 h-3.5 text-amber-400" />
                 <span>Challenges</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  2 LIVE
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  SPRINTS
                 </span>
               </Link>
             </nav>
