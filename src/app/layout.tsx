@@ -16,9 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Remorph Forge — Engineering Proof-of-Work Platform",
+  title: "AEVORA // FORGE — Proof-of-Work Platform for Hardware & AI Builders",
   description:
-    "Community workspace for hardware and software builders. Proof-of-work feed, collaborative projects, engineering blueprints, and timed challenges.",
+    "The Proof-of-Work Hub for Hardware & AI Builders. Live chronological ship feed, open collaborator matching, engineering blueprints, and timed build sprints.",
 };
 
 export default function RootLayout({
@@ -29,34 +29,33 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 relative selection:bg-emerald-200 selection:text-emerald-950">
-        {/* Subtle Ambient Engineering Grid & Radiance Background */}
-        <div className="fixed inset-0 bg-grid-pattern pointer-events-none opacity-60 z-0" />
-        <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[350px] bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(16,185,129,0.06),transparent)] pointer-events-none z-0" />
+      <body className="min-h-full flex flex-col bg-zinc-950 text-zinc-100 cyber-grid relative selection:bg-emerald-500/20 selection:text-emerald-400">
+        {/* Subtle Ambient Engineering Radiance Background */}
+        <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[1100px] h-[350px] bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(16,185,129,0.08),transparent)] pointer-events-none z-0" />
 
         <AuthProvider>
           <div className="relative z-10 flex flex-col min-h-screen">
-            <Suspense fallback={<div className="h-14 border-b border-slate-200 bg-white" />}>
+            <Suspense fallback={<div className="h-14 border-b border-zinc-800 bg-zinc-950" />}>
               <Navbar />
             </Suspense>
             <main className="flex-1">{children}</main>
 
             {/* Engineering Footer */}
-            <footer className="border-t border-slate-200 bg-white/80 backdrop-blur py-5 text-center text-xs font-mono text-slate-500 relative z-10">
+            <footer className="border-t border-zinc-800 bg-zinc-950/80 backdrop-blur-md py-5 text-center text-xs font-mono text-zinc-500 relative z-10">
               <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-emerald-600">REMORPH FORGE</span>
-                  <span>/</span>
-                  <span>Verifiable Proof of Work</span>
+                  <span className="font-bold text-emerald-400">AEVORA // FORGE</span>
+                  <span className="text-zinc-600">/</span>
+                  <span className="text-zinc-400">The Proof-of-Work Hub for Hardware & AI</span>
                 </div>
-                <div className="flex items-center gap-4 text-[11px] text-slate-500">
-                  <span>Hardware & Systems Software</span>
-                  <span>•</span>
-                  <span>Community Standards</span>
-                  <span>•</span>
-                  <span>v2.4.0</span>
+                <div className="flex items-center gap-4 text-[11px] text-zinc-500">
+                  <span>Hardware & AI Systems</span>
+                  <span className="text-zinc-700">•</span>
+                  <span>Zero Vaporware</span>
+                  <span className="text-zinc-700">•</span>
+                  <span>v2.5.0</span>
                 </div>
               </div>
             </footer>

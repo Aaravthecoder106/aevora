@@ -2,8 +2,14 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { Profile } from "@/lib/supabase/types";
+
+interface SignUpMetadata {
+  username: string;
+  fullName: string;
+  role: string;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -13,6 +19,8 @@ interface AuthContextType {
   signInWithGithub: () => Promise<void>;
   signInWithDiscord: () => Promise<void>;
   signInWithOtp: (email: string) => Promise<{ error: any }>;
+  signUpWithPassword: (email: string, password: string, metadata: SignUpMetadata) => Promise<{ error: any }>;
+  signInWithPassword: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -25,6 +33,8 @@ const AuthContext = createContext<AuthContextType>({
   signInWithGithub: async () => {},
   signInWithDiscord: async () => {},
   signInWithOtp: async () => ({ error: null }),
+  signUpWithPassword: async () => ({ error: null }),
+  signInWithPassword: async () => ({ error: null }),
   signOut: async () => {},
   refreshProfile: async () => {},
 });
@@ -34,7 +44,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const supabase = createClient();
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -107,6 +116,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: res.error };
   };
 
+  const signUpWithPassword = async (email: string, password: string, metadata: SignUpMetadata) => {
+    const cleanUsername = metadata.username.replace("@", "").trim().toLowerCase();
+    const res = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          username: cleanUsername,
+          full_name: metadata.fullName.trim(),
+          role: metadata.role,
+        },
+      },
+    });
+
+    if (res.data.user && !res.error) {
+      // Upsert profile directly in case trigger delay
+      await supabase.from("profiles").upsert({
+        id: res.data.user.id,
+        username: cleanUsername,
+        full_name: metadata.fullName.trim(),
+        role: metadata.role,
+        avatar_url: `https://api.dicebear.com/7.x/bottts/svg?seed=${cleanUsername}`,
+      });
+      await fetchProfile(res.data.user.id);
+    }
+
+    return { error: res.error };
+  };
+
+  const signInWithPassword = async (email: string, password: string) => {
+    const res = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (res.data.user && !res.error) {
+      await fetchProfile(res.data.user.id);
+    }
+    return { error: res.error };
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -130,6 +179,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signInWithGithub,
         signInWithDiscord,
         signInWithOtp,
+        signUpWithPassword,
+        signInWithPassword,
         signOut,
         refreshProfile,
       }}

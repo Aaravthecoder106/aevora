@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { ChallengeItem, ShipPost } from "@/lib/types/community";
-import { X, Zap, Terminal, Send, Check } from "lucide-react";
-import { GithubIcon } from "@/components/ui/Icons";
+import { X, Zap, Terminal, Check } from "lucide-react";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 interface SubmitBuildModalProps {
   isOpen: boolean;
@@ -20,13 +20,13 @@ export function SubmitBuildModal({
   onClose,
   onSubmitBuild,
 }: SubmitBuildModalProps) {
+  const { user, profile } = useAuth();
   const activeChallenges = challenges.filter((c) => c.status === "active");
   const [selectedChallengeId, setSelectedChallengeId] = useState<string>(
     preselectedChallengeId || activeChallenges[0]?.id || ""
   );
-  const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [repoUrl, setRepoUrl] = useState("https://github.com/ay473671/remorph-sprint-build");
+  const [repoUrl, setRepoUrl] = useState(profile?.github_url || "");
   const [demoUrl, setDemoUrl] = useState("");
   const [snippetTitle, setSnippetTitle] = useState("bench_telemetry.log");
   const [snippetBody, setSnippetBody] = useState(
@@ -40,15 +40,17 @@ export function SubmitBuildModal({
     if (!content.trim()) return;
 
     const matchedChallenge = challenges.find((c) => c.id === selectedChallengeId);
+    const authorUsername = profile?.username || user?.email?.split("@")[0] || "builder";
+    const authorName = profile?.full_name || authorUsername;
 
     const newPost: ShipPost = {
       id: `ship-${Date.now()}`,
       type: "ship",
       author: {
-        name: "Aarav Kumar",
-        username: "ay473671",
-        avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=ay473671",
-        streak: 7,
+        name: authorName,
+        username: authorUsername,
+        avatar: profile?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${authorUsername}`,
+        streak: (profile?.streak_count || 0) + 1,
         badge: "Sprint Contender",
       },
       content: content.trim(),
@@ -64,8 +66,8 @@ export function SubmitBuildModal({
             body: snippetBody.trim(),
           }
         : undefined,
-      upvotes: 1,
-      hasUpvoted: true,
+      upvotes: 0,
+      hasUpvoted: false,
       comments: [],
     };
 
@@ -74,38 +76,38 @@ export function SubmitBuildModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
-      <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center">
-              <Zap className="w-4 h-4 text-emerald-600" />
+            <div className="w-8 h-8 rounded-lg bg-emerald-950/40 text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
+              <Zap className="w-4 h-4 text-emerald-400" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-900">Submit Sprint Build Log</h3>
-              <p className="text-xs text-slate-500 font-mono">Log verified progress & claim milestone XP</p>
+              <h3 className="text-sm font-bold text-zinc-100">Submit Sprint Build Log</h3>
+              <p className="text-xs text-zinc-400 font-mono">Log verified progress & claim milestone XP</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 transition-colors p-1"
+            className="text-zinc-500 hover:text-zinc-200 transition-colors p-1"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto font-mono text-xs">
           {/* Target Challenge */}
           <div>
-            <label className="block text-xs font-mono font-semibold uppercase tracking-wider text-slate-500 mb-1">
+            <label className="block text-[11px] uppercase tracking-wider text-zinc-400 mb-1">
               Select Sprint / Challenge
             </label>
             <select
               value={selectedChallengeId}
               onChange={(e) => setSelectedChallengeId(e.target.value)}
-              className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-hidden focus:ring-1 focus:ring-emerald-500 font-medium"
+              className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-100 focus:outline-hidden focus:border-emerald-500 font-medium"
             >
               {challenges.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -117,14 +119,14 @@ export function SubmitBuildModal({
 
           {/* Build Log Content */}
           <div>
-            <label className="block text-xs font-mono font-semibold uppercase tracking-wider text-slate-500 mb-1">
+            <label className="block text-[11px] uppercase tracking-wider text-zinc-400 mb-1">
               Ship Log & Technical Progress
             </label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
               rows={3}
-              className="w-full p-3 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-hidden focus:ring-1 focus:ring-emerald-500 font-mono"
+              className="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-100 focus:outline-hidden focus:border-emerald-500 leading-relaxed font-sans"
               placeholder="What working milestone did you achieve today? Detail the circuit bringup, firmware patch, or bench test results..."
               required
             />
@@ -133,37 +135,37 @@ export function SubmitBuildModal({
           {/* Links */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-mono font-semibold uppercase tracking-wider text-slate-500 mb-1">
+              <label className="block text-[11px] uppercase tracking-wider text-zinc-400 mb-1">
                 Repository / CAD Link
               </label>
               <input
                 type="url"
                 value={repoUrl}
                 onChange={(e) => setRepoUrl(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-hidden focus:ring-1 focus:ring-emerald-500 font-mono text-[11px]"
+                className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 focus:outline-hidden focus:border-emerald-500 text-[11px]"
                 placeholder="https://github.com/..."
               />
             </div>
 
             <div>
-              <label className="block text-xs font-mono font-semibold uppercase tracking-wider text-slate-500 mb-1">
+              <label className="block text-[11px] uppercase tracking-wider text-zinc-400 mb-1">
                 Demo Link / Video (Optional)
               </label>
               <input
                 type="url"
                 value={demoUrl}
                 onChange={(e) => setDemoUrl(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-hidden focus:ring-1 focus:ring-emerald-500 font-mono text-[11px]"
+                className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 focus:outline-hidden focus:border-emerald-500 text-[11px]"
                 placeholder="https://..."
               />
             </div>
           </div>
 
           {/* Terminal / Snippet proof */}
-          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+          <div className="p-3.5 bg-zinc-950 border border-zinc-800 rounded-xl space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                <Terminal className="w-3.5 h-3.5 text-slate-600" />
+              <label className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
+                <Terminal className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Proof of Work (Terminal / Telemetry Trace)</span>
               </label>
               <input
@@ -171,30 +173,30 @@ export function SubmitBuildModal({
                 value={snippetTitle}
                 onChange={(e) => setSnippetTitle(e.target.value)}
                 placeholder="file or log name"
-                className="text-[10px] font-mono px-2 py-0.5 bg-white border border-slate-200 rounded text-slate-600"
+                className="text-[10px] px-2 py-0.5 bg-zinc-900 border border-zinc-800 rounded text-zinc-400"
               />
             </div>
             <textarea
               value={snippetBody}
               onChange={(e) => setSnippetBody(e.target.value)}
               rows={3}
-              className="w-full p-2.5 text-[11px] font-mono bg-slate-900 text-emerald-400 rounded-lg border border-slate-800 focus:outline-hidden"
+              className="w-full p-2.5 text-[11px] bg-zinc-900 text-emerald-400 rounded-lg border border-zinc-800 focus:outline-hidden leading-relaxed"
               placeholder="Paste terminal log, compiler output, or logic analyzer serial frame..."
             />
           </div>
 
           {/* Actions */}
-          <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+          <div className="pt-2 flex items-center justify-end gap-2 border-t border-zinc-800">
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 py-2 text-xs font-medium text-slate-600 hover:text-slate-800 transition-colors"
+              className="px-3.5 py-2 text-zinc-400 hover:text-zinc-200 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition-colors shadow-xs"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-colors shadow-xs"
             >
               <Check className="w-3.5 h-3.5" />
               <span>Submit to Sprint</span>

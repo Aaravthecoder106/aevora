@@ -14,6 +14,7 @@ import {
   ArrowRight,
   ShieldCheck,
   Star,
+  Layers,
 } from "lucide-react";
 import { GithubIcon } from "@/components/ui/Icons";
 import { ProjectItem } from "@/lib/types/community";
@@ -50,219 +51,220 @@ export function ProjectsView({
   });
 
   return (
-    <div className="space-y-4">
-      {/* Top Header & Action Bar */}
-      <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div className="space-y-6">
+      {/* Top Banner & Actions */}
+      <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800 shadow-xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <Rocket className="w-4 h-4 text-emerald-600" />
-              <span>Project Showcase & Team Collaboration</span>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-medium text-blue-400 bg-blue-950/40 border border-blue-500/30 mb-1.5">
+              <Rocket className="w-3.5 h-3.5 text-blue-400" />
+              <span>PROJECT SHOWCASE & RECRUITMENT</span>
+            </div>
+            <h2 className="text-xl font-bold text-zinc-100 tracking-tight">
+              Community Hardware & AI Builds
             </h2>
-            <p className="text-xs text-slate-500 font-mono mt-0.5">
-              Verified hardware prototypes, firmware builds, and open-source systems seeking co-builders.
+            <p className="text-xs text-zinc-400 font-mono mt-1">
+              Real open-source electronics, custom boards, and deep systems code. Team up with builders looking for specialized talent.
             </p>
           </div>
 
           <button
             onClick={onOpenListProjectModal}
-            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs font-semibold shadow-xs transition-all active:scale-95 shrink-0"
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-mono font-bold text-xs rounded-lg transition-colors shadow-lg shadow-emerald-950/40 shrink-0 self-start sm:self-auto"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>List Project</span>
+            <span>+ List Your Build</span>
           </button>
         </div>
 
         {/* Filter Bar & Search */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs font-mono">
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setStatusFilter("all")}
-              className={`px-2.5 py-1 rounded-md transition-colors ${
-                statusFilter === "all"
-                  ? "bg-slate-900 text-white font-medium"
-                  : "bg-slate-100 text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              All Projects ({projects.length})
-            </button>
-            <button
-              onClick={() => setStatusFilter("collab")}
-              className={`px-2.5 py-1 rounded-md transition-colors flex items-center gap-1 ${
-                statusFilter === "collab"
-                  ? "bg-emerald-700 text-white font-medium"
-                  : "bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100"
-              }`}
-            >
-              <Users className="w-3 h-3 text-emerald-600" />
-              <span>Open Roles ({projects.filter((p) => p.lookingForCollab).length})</span>
-            </button>
-            <button
-              onClick={() => setStatusFilter("Prototype")}
-              className={`px-2.5 py-1 rounded-md transition-colors ${
-                statusFilter === "Prototype"
-                  ? "bg-slate-900 text-white font-medium"
-                  : "bg-slate-100 text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              Prototypes
-            </button>
-            <button
-              onClick={() => setStatusFilter("Shipped")}
-              className={`px-2.5 py-1 rounded-md transition-colors ${
-                statusFilter === "Shipped"
-                  ? "bg-slate-900 text-white font-medium"
-                  : "bg-slate-100 text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              Shipped
-            </button>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-zinc-800">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+            {[
+              { id: "all", label: "All Builds" },
+              { id: "collab", label: "Open Roles" },
+              { id: "Prototype", label: "Prototypes" },
+              { id: "Beta", label: "Beta" },
+              { id: "Shipped", label: "Shipped" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setStatusFilter(tab.id)}
+                className={`px-3 py-1 rounded-md text-xs font-mono transition-all border ${
+                  statusFilter === tab.id
+                    ? "bg-zinc-800 text-zinc-100 border-zinc-700 font-semibold"
+                    : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-zinc-200"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
-          <div className="w-full sm:w-52">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search stack, title..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-600 focus:bg-white"
-            />
-          </div>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by title, stack (ESP32, Rust, KiCad)..."
+            className="px-3 py-1.5 text-xs font-mono bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 placeholder-zinc-600 focus:outline-hidden focus:border-emerald-500 w-full sm:w-64"
+          />
         </div>
       </div>
 
-      {/* Projects Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filteredProjects.map((project) => (
-          <div
-            key={project.id}
-            className="bg-white rounded-xl p-5 border border-slate-200 shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between space-y-4"
+      {/* Projects Grid or Clean Empty State */}
+      {filteredProjects.length === 0 ? (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-12 text-center space-y-4">
+          <div className="w-12 h-12 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-center mx-auto text-zinc-500">
+            <Rocket className="w-6 h-6 text-zinc-500" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-sm font-mono font-bold text-zinc-300">
+              No builds found
+            </h3>
+            <p className="text-xs text-zinc-500 font-mono max-w-md mx-auto leading-relaxed">
+              No projects have been listed yet. Showcase your custom electronics, PCB schematic, or local AI pipeline and recruit teammates.
+            </p>
+          </div>
+          <button
+            onClick={onOpenListProjectModal}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-mono font-bold text-xs rounded-lg transition-colors shadow-xs"
           >
-            <div className="space-y-3">
-              {/* Header: Title, Status Pill, Owner */}
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-base font-bold text-slate-900 tracking-tight truncate">
-                      {project.title}
-                    </h3>
-                    <span
-                      className={`text-[10px] font-mono px-2 py-0.5 rounded font-semibold border ${
-                        project.status === "Shipped"
-                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                          : project.status === "Beta"
-                          ? "bg-blue-50 text-blue-700 border-blue-200"
-                          : "bg-amber-50 text-amber-700 border-amber-200"
-                      }`}
-                    >
-                      {project.status.toUpperCase()}
+            <Plus className="w-3.5 h-3.5" />
+            <span>List Your Project</span>
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredProjects.map((project) => (
+            <div
+              key={project.id}
+              className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 shadow-xl flex flex-col justify-between hover:border-zinc-700 transition-all group"
+            >
+              <div>
+                {/* Header: Status and Collab Indicator */}
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <span
+                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wider border ${
+                      project.status === "Shipped"
+                        ? "bg-emerald-950/40 text-emerald-400 border-emerald-500/30"
+                        : project.status === "Beta"
+                        ? "bg-blue-950/40 text-blue-400 border-blue-500/30"
+                        : "bg-amber-950/40 text-amber-400 border-amber-500/30"
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                    {project.status}
+                  </span>
+
+                  {project.lookingForCollab && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono bg-purple-950/40 text-purple-300 border border-purple-500/30">
+                      <Users className="w-3 h-3 text-purple-400" />
+                      Recruiting Team
                     </span>
-                  </div>
-                  <p className="text-xs text-slate-500 font-medium mt-0.5 leading-snug">
-                    {project.tagline}
-                  </p>
+                  )}
                 </div>
 
-                <div className="flex items-center gap-1.5 shrink-0">
+                {/* Title & Tagline */}
+                <h3 className="text-base font-bold text-zinc-100 group-hover:text-emerald-400 transition-colors">
+                  {project.title}
+                </h3>
+                <p className="text-xs text-zinc-300 font-mono mt-1 font-medium">
+                  {project.tagline}
+                </p>
+                <p className="text-xs text-zinc-400 mt-2 line-clamp-2 leading-relaxed font-sans">
+                  {project.description}
+                </p>
+
+                {/* Tech Stack Chips */}
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  {project.techStack.map((tech) => (
+                    <span
+                      key={tech}
+                      className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-950 text-zinc-400 border border-zinc-800"
+                    >
+                      {tech}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Open Collaborator Roles */}
+                {project.lookingForCollab && project.openRoles.length > 0 && (
+                  <div className="mt-4 p-3 bg-zinc-950 border border-zinc-800/80 rounded-lg space-y-2">
+                    <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400">
+                      <span>Open Positions:</span>
+                      <span className="text-purple-400">{project.openRoles.length} Available</span>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      {project.openRoles.map((role, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between p-2 rounded bg-zinc-900 border border-zinc-800 text-xs"
+                        >
+                          <div>
+                            <div className="font-mono font-bold text-zinc-200">
+                              {role.role}
+                            </div>
+                            <div className="text-[10px] font-mono text-zinc-500">
+                              Skills: {role.skills.join(", ")}
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => onRequestCollab(project, role.role)}
+                            className="px-2.5 py-1 text-[11px] font-mono font-semibold bg-purple-950 hover:bg-purple-900 text-purple-300 border border-purple-500/40 rounded transition-colors"
+                          >
+                            Apply
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer: Owner info & Source links */}
+              <div className="mt-5 pt-3 border-t border-zinc-800 flex items-center justify-between">
+                <div className="flex items-center gap-2">
                   <img
                     src={project.owner.avatar}
-                    alt={project.owner.username}
-                    className="w-7 h-7 rounded-full object-cover border border-slate-200"
+                    alt={project.owner.name}
+                    className="w-6 h-6 rounded-full object-cover border border-zinc-800 bg-zinc-950"
                   />
-                </div>
-              </div>
-
-              {/* Description */}
-              <p className="text-xs text-slate-700 leading-relaxed font-sans line-clamp-3">
-                {project.description}
-              </p>
-
-              {/* Tech Stack Pills */}
-              <div className="flex flex-wrap gap-1">
-                {project.techStack.map((tech) => (
-                  <span
-                    key={tech}
-                    className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200"
-                  >
-                    {tech}
+                  <span className="text-xs font-mono text-zinc-400">
+                    by <span className="text-zinc-200 font-semibold">@{project.owner.username}</span>
                   </span>
-                ))}
-              </div>
-
-              {/* Open Roles & Collaboration Callout */}
-              {project.lookingForCollab && project.openRoles.length > 0 && (
-                <div className="p-3 rounded-lg bg-emerald-50/60 border border-emerald-200/80 space-y-2">
-                  <div className="flex items-center justify-between text-[11px] font-mono">
-                    <span className="font-semibold text-emerald-900 flex items-center gap-1.5">
-                      <Users className="w-3.5 h-3.5 text-emerald-700" />
-                      <span>OPEN ROLES FOR CO-BUILDERS</span>
-                    </span>
-                    <span className="text-[10px] text-emerald-700">Apply to join</span>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    {project.openRoles.map((role) => (
-                      <div
-                        key={role.role}
-                        className="flex items-center justify-between gap-2 p-1.5 rounded bg-white border border-emerald-100 text-xs"
-                      >
-                        <div className="min-w-0">
-                          <p className="font-semibold text-slate-800 text-[11px] truncate">
-                            {role.role}
-                          </p>
-                          <p className="text-[10px] font-mono text-slate-500 truncate">
-                            Skills: {role.skills.join(", ")}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => onRequestCollab(project, role.role)}
-                          className="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-[10px] font-medium shrink-0 shadow-xs"
-                        >
-                          Request to Collab
-                        </button>
-                      </div>
-                    ))}
-                  </div>
                 </div>
-              )}
-            </div>
 
-            {/* Card Footer: Repo Link, Stars, Date */}
-            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-mono text-slate-500">
-              <div className="flex items-center gap-3">
-                {project.repoUrl && (
-                  <a
-                    href={project.repoUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-slate-600 hover:text-slate-900 transition-colors"
-                  >
-                    <GithubIcon className="w-3.5 h-3.5" />
-                    <span>Repository</span>
-                    <ExternalLink className="w-2.5 h-2.5 text-slate-400" />
-                  </a>
-                )}
-                {project.demoUrl && (
-                  <a
-                    href={project.demoUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-emerald-700 hover:text-emerald-800 transition-colors"
-                  >
-                    <Globe className="w-3.5 h-3.5" />
-                    <span>Live Demo</span>
-                  </a>
-                )}
-              </div>
-
-              <div className="flex items-center gap-1 text-slate-400 text-[11px]">
-                <Clock className="w-3 h-3" />
-                <span>{project.shippedAt}</span>
+                <div className="flex items-center gap-2">
+                  {project.repoUrl && (
+                    <a
+                      href={project.repoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+                      title="GitHub Repository"
+                    >
+                      <GithubIcon className="w-4 h-4" />
+                    </a>
+                  )}
+                  {project.demoUrl && (
+                    <a
+                      href={project.demoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+                      title="Live Demo"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
