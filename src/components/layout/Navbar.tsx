@@ -15,56 +15,47 @@ export function Navbar() {
 
   return (
     <>
-      <header className="glass-header sticky top-0 z-40 w-full backdrop-blur-xl">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      <header className="glass-header sticky top-0 z-40 w-full backdrop-blur-xl border-b border-zinc-800/80">
+        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
           {/* Brand & Left Nav */}
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500/20 via-zinc-900 to-zinc-950 border border-emerald-500/30 flex items-center justify-center shadow-lg group-hover:border-emerald-500/60 transition-all duration-300">
-                <span className="font-mono font-black text-sm text-emerald-400">R⚡</span>
+              <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-emerald-500/30 flex items-center justify-center shadow-lg group-hover:border-emerald-500/60 transition-all duration-300">
+                <span className="font-mono font-black text-xs text-emerald-400">R⚡</span>
               </div>
-              <div className="flex flex-col">
-                <span className="text-base font-bold tracking-tight text-white group-hover:text-emerald-400 transition-colors">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold tracking-tight text-white group-hover:text-emerald-400 transition-colors">
                   REMORPH
                 </span>
-                <span className="text-[9px] font-mono tracking-widest text-zinc-400 uppercase -mt-0.5">
-                  Proof of Work
+                <span className="hidden sm:inline-block text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700/60">
+                  WORKSPACE
                 </span>
               </div>
             </Link>
 
-            <nav className="hidden md:flex items-center gap-1">
+            <nav className="hidden md:flex items-center gap-1 text-xs font-mono">
               <Link
                 href="/"
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                  pathname === "/"
-                    ? "text-white bg-white/[0.08] shadow-sm"
-                    : "text-zinc-400 hover:text-white hover:bg-white/[0.03]"
+                className={`px-3 py-1.5 rounded-md font-medium transition-all flex items-center gap-1.5 ${
+                  pathname === "/" || pathname === "/feed"
+                    ? "text-white bg-zinc-800 border border-zinc-700 shadow-sm"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-900"
                 }`}
               >
-                Overview
-              </Link>
-              <Link
-                href="/feed"
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                  pathname.startsWith("/feed")
-                    ? "text-white bg-white/[0.08] shadow-sm"
-                    : "text-zinc-400 hover:text-white hover:bg-white/[0.03]"
-                }`}
-              >
-                Live Feed
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Live Feed</span>
               </Link>
               <Link
                 href="/challenges"
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-md font-medium transition-all flex items-center gap-1.5 ${
                   pathname.startsWith("/challenges")
-                    ? "text-white bg-white/[0.08] shadow-sm"
-                    : "text-zinc-400 hover:text-white hover:bg-white/[0.03]"
+                    ? "text-white bg-zinc-800 border border-zinc-700 shadow-sm"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-900"
                 }`}
               >
                 <Trophy className="w-3.5 h-3.5 text-amber-400" />
                 <span>Challenges</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                   SPRINTS
                 </span>
               </Link>
