@@ -290,6 +290,31 @@ create trigger on_upvote_change
   for each row execute function public.handle_upvote_change();
 
 -- ==============================================================================
+-- TABLE: SHIP_COMMENTS (Threaded feedback & technical reviews)
+-- ==============================================================================
+create table if not exists public.ship_comments (
+  id uuid primary key default gen_random_uuid(),
+  ship_log_id uuid references public.ship_logs(id) on delete cascade not null,
+  author_id uuid references public.profiles(id) on delete cascade not null,
+  content text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.ship_comments enable row level security;
+
+create policy "Ship comments are viewable by everyone"
+  on public.ship_comments for select
+  using (true);
+
+create policy "Authenticated users can create comments"
+  on public.ship_comments for insert
+  with check (auth.uid() = author_id);
+
+create policy "Authors can delete own comments"
+  on public.ship_comments for delete
+  using (auth.uid() = author_id);
+
+-- ==============================================================================
 -- TABLE: COLLAB_REQUESTS (Requests to join projects)
 -- ==============================================================================
 create table if not exists public.collab_requests (

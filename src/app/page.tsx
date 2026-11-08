@@ -133,6 +133,52 @@ export default function AevoraCommunityPage() {
 
       const upvotedIds = new Set((userUpvotes || []).map((u) => u.ship_log_id));
 
+      // Fetch ship comments
+      const { data: commentsData } = await supabase
+        .from("ship_comments")
+        .select(`
+          id,
+          ship_log_id,
+          content,
+          created_at,
+          profiles:author_id (
+            username,
+            full_name,
+            avatar_url,
+            streak_count
+          )
+        `)
+        .order("created_at", { ascending: true });
+
+      const commentsByLogId: Record<string, Comment[]> = {};
+      if (commentsData) {
+        commentsData.forEach((c: any) => {
+          if (!commentsByLogId[c.ship_log_id]) {
+            commentsByLogId[c.ship_log_id] = [];
+          }
+          const author = c.profiles || {};
+          const authorUser = author.username || "builder";
+          commentsByLogId[c.ship_log_id].push({
+            id: c.id,
+            author: {
+              name: author.full_name || authorUser,
+              username: authorUser,
+              avatar: author.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${authorUser}`,
+              streak: author.streak_count || 1,
+            },
+            content: c.content,
+            timestamp: new Date(c.created_at).toLocaleDateString(undefined, {
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            upvotes: 0,
+            hasUpvoted: false,
+          });
+        });
+      }
+
       if (logsData) {
         const mappedPosts: ShipPost[] = logsData.map((log: any) => {
           const authorProfile = log.profiles || {};
@@ -169,7 +215,7 @@ export default function AevoraCommunityPage() {
               : undefined,
             upvotes: log.upvotes_count || 0,
             hasUpvoted: upvotedIds.has(log.id),
-            comments: [],
+            comments: commentsByLogId[log.id] || [],
           };
         });
         setPosts(mappedPosts);
@@ -465,6 +511,24 @@ export default function AevoraCommunityPage() {
       await fetchAllData();
     } catch (e) {
       console.error("Error toggling upvote:", e);
+    }
+  };
+
+  const handleAddComment = async (postId: string, comment: Comment) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase.from("ship_comments").insert({
+        ship_log_id: postId,
+        author_id: user.id,
+        content: comment.content,
+      });
+
+      if (!error) {
+        await fetchAllData();
+      }
+    } catch (e) {
+      console.error("Error adding comment:", e);
     }
   };
 
@@ -889,7 +953,7 @@ export default function AevoraCommunityPage() {
                     posts={posts}
                     onAddPost={handleAddPost}
                     onToggleUpvote={handleToggleUpvote}
-                    onAddComment={() => {}}
+                    onAddComment={handleAddComment}
                     selectedTag={selectedTag}
                     onSelectTag={setSelectedTag}
                     userProfile={{
