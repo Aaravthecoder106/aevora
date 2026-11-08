@@ -1,852 +1,787 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import Link from "next/link";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Flame,
   Zap,
   Trophy,
   Filter,
-  Send,
-  Globe,
+  Layers,
+  Sparkles,
+  Rocket,
+  User,
+  ShieldCheck,
+  Radio,
   Tag,
+  Plus,
   Clock,
   ExternalLink,
   Terminal,
-  Code2,
-  CheckCircle2,
-  Radio,
-  Layers,
-  Sparkles,
+  Compass,
   ArrowRight,
   TrendingUp,
-  Cpu,
-  Bookmark,
-  Share2,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { GithubIcon } from "@/components/ui/Icons";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { AuthModal } from "@/components/auth/AuthModal";
-import { createClient } from "@/lib/supabase/client";
 
-interface BuilderPost {
-  id: string;
-  author: {
-    name: string;
-    username: string;
-    avatar: string;
-    streak: number;
-  };
-  content: string;
-  timestamp: string;
-  tags: string[];
-  snippet?: {
-    type: "terminal" | "code";
-    title: string;
-    body: string;
-  };
-  image?: string;
-  githubUrl?: string;
-  demoUrl?: string;
-  challengeTag?: string;
-  upvotes: number;
-  hasUpvoted?: boolean;
-}
+// Types
+import {
+  ViewMode,
+  ShipPost,
+  Comment,
+  ProjectItem,
+  ChallengeItem,
+  BlueprintItem,
+  ResourceTool,
+  AISpec,
+  CollabApplication,
+  UserDashboardData,
+} from "@/lib/types/community";
 
-const INITIAL_POSTS: BuilderPost[] = [
-  {
-    id: "post-1",
-    author: {
-      name: "Alex Vance",
-      username: "alex_volt",
-      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      streak: 14,
-    },
-    content: "Finished routing the MIPI DSI display ribbon around the battery compartment on the Cyberdeck prototype. Cold booted onto Debian 12 with Compute Module 4 + custom e-ink secondary display. Standby draw 180mA at 5V.",
-    timestamp: "18m ago",
-    tags: ["#hardware", "#pcb", "#cyberdeck"],
-    challengeTag: "7-Day Hardware Sprint",
-    githubUrl: "https://github.com/alexvolt/ortho-cyberdeck-v2",
-    snippet: {
-      type: "terminal",
-      title: "serial_console.log",
-      body: "[  +0.041] mipi_dsi 3f980000.dsi: panel attached: waveshare_7_9\n[  +0.120] eink_epd spi0.0: panel initialized (250x122 monochrome)\n[  +0.412] systemd[1]: Reached target Graphical Interface.\n[  +0.415] cyberdeck-shell: display driver active on /dev/fb0",
-    },
-    upvotes: 42,
-    hasUpvoted: false,
-  },
-  {
-    id: "post-2",
-    author: {
-      name: "Elena Rostova",
-      username: "elena_core",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-      streak: 9,
-    },
-    content: "Shipped v0.4 of `hyperdrive-agent`: single static 8.2MB binary that parses git diffs and runs automated multi-file semantic edits in <110ms using local llama.cpp bindings. Replaced 4 python scripts with zero external dependencies.",
-    timestamp: "1h ago",
-    tags: ["#ai", "#rust", "#nextjs"],
-    challengeTag: "Local AI Hack",
-    githubUrl: "https://github.com/elenarostova/hyperdrive-agent",
-    snippet: {
-      type: "terminal",
-      title: "hyperdrive bench --target ./core/ast.rs",
-      body: "$ hyperdrive bench --target ./core/ast.rs\nBenchmarking AST parse throughput...\nParsed 480,210 lines/sec (alloc: 14.2MB RSS)\nZero telemetry. All AST edits verified in 84ms.",
-    },
-    upvotes: 68,
-    hasUpvoted: true,
-  },
-  {
-    id: "post-3",
-    author: {
-      name: "Marcus Thorne",
-      username: "marcus_rf",
-      avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
-      streak: 7,
-    },
-    content: "Field test successful for the IP67 solar telemetry rig. Deep sleep current measured at 14.8µA on 3.3V bus via Keithley DMM. Transmitted 48 packets over 12km without dropped frames. PCB layout v2 committed to repo.",
-    timestamp: "3h ago",
-    tags: ["#hardware", "#pcb", "#embedded"],
-    githubUrl: "https://github.com/marcusthorne/solarpulse-lora",
-    demoUrl: "https://solarpulse.live",
-    snippet: {
-      type: "terminal",
-      title: "lora_field_rig.log",
-      body: "[LoRa Node 0x4A] TX freq: 868.1MHz SF7 BW125 CR4/5 PWR: +14dBm\n[LoRa Node 0x4A] RSSI: -84dBm SNR: +8.5dB (Gateway #01 acknowledged)\n[LoRa Node 0x4A] Sleep enter: 14.81 uA (ext wakeup on RTC 300s)",
-    },
-    upvotes: 53,
-    hasUpvoted: false,
-  },
-  {
-    id: "post-4",
-    author: {
-      name: "Dev Patel",
-      username: "dev_kernel",
-      avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
-      streak: 5,
-    },
-    content: "Ported Zephyr RTOS v3.7 to the custom RP2350 dual-core RISC-V board. Inter-core FIFO IPC benchmarked at 28ns roundtrip latency. Schematic rev B sent to fabrication today.",
-    timestamp: "5h ago",
-    tags: ["#embedded", "#hardware"],
-    githubUrl: "https://github.com/devpatel/rp2350-zephyr",
-    snippet: {
-      type: "code",
-      title: "main.c (Zephyr IPC)",
-      body: "*** Booting Zephyr OS build v3.7.0 ***\nrp2350_m33: Core 0 active (150MHz)\nrp2350_hazard3: Core 1 started IPC bridge\n[IPC] Loopback test: 28ns avg latency (1,000,000 iterations)",
-    },
-    upvotes: 31,
-    hasUpvoted: false,
-  },
-];
+// Mock Data
+import {
+  INITIAL_COMMUNITY_POSTS,
+  INITIAL_PROJECTS,
+  INITIAL_CHALLENGES,
+  INITIAL_BLUEPRINTS,
+  INITIAL_RESOURCES,
+  MONTHLY_LEADERBOARD,
+  INITIAL_USER_DASHBOARD,
+} from "@/lib/data/mockCommunityData";
 
-const LEADERBOARD_BUILDERS = [
-  { name: "Alex Vance", username: "alex_volt", streak: 14, role: "Hardware / ESP32" },
-  { name: "Elena Rostova", username: "elena_core", streak: 9, role: "Rust & Local AI" },
-  { name: "Marcus Thorne", username: "marcus_rf", streak: 7, role: "LoRa / Solar" },
-  { name: "Dev Patel", username: "dev_kernel", streak: 5, role: "Zephyr RTOS" },
-  { name: "Kai Tanaka", username: "kai_mech", streak: 4, role: "6061 CNC CAD" },
-];
+// View Components
+import { FeedView } from "@/components/views/FeedView";
+import { ProjectsView } from "@/components/views/ProjectsView";
+import { ChallengesView } from "@/components/views/ChallengesView";
+import { BlueprintsView } from "@/components/views/BlueprintsView";
+import { AIGeneratorView } from "@/components/views/AIGeneratorView";
+import { LeaderboardView } from "@/components/views/LeaderboardView";
+import { DashboardView } from "@/components/views/DashboardView";
 
-const AVAILABLE_TAGS = [
-  { id: "all", label: "All Topics" },
-  { id: "#hardware", label: "#hardware" },
-  { id: "#pcb", label: "#pcb" },
-  { id: "#ai", label: "#ai" },
-  { id: "#embedded", label: "#embedded" },
-  { id: "#nextjs", label: "#nextjs" },
-  { id: "#rust", label: "#rust" },
-];
+// Modal Components
+import { RulesModal } from "@/components/modals/RulesModal";
+import { CollabModal } from "@/components/modals/CollabModal";
+import { ListProjectModal } from "@/components/modals/ListProjectModal";
+import { SubmitBuildModal } from "@/components/modals/SubmitBuildModal";
+import { formatCountdown } from "@/lib/utils";
 
-export default function WorkspaceDashboard() {
+export default function CommunityPage() {
   const { user, profile } = useAuth();
-  const [posts, setPosts] = useState<BuilderPost[]>(INITIAL_POSTS);
-  const [filterMode, setFilterMode] = useState<"latest" | "top">("latest");
-  const [selectedTag, setSelectedTag] = useState("all");
+
+  // Active View State
+  const [activeView, setActiveView] = useState<ViewMode>("feed");
+  const [selectedTag, setSelectedTag] = useState<string>("all");
+
+  // State with LocalStorage fallbacks
+  const [posts, setPosts] = useState<ShipPost[]>(INITIAL_COMMUNITY_POSTS);
+  const [projects, setProjects] = useState<ProjectItem[]>(INITIAL_PROJECTS);
+  const [challenges, setChallenges] = useState<ChallengeItem[]>(INITIAL_CHALLENGES);
+  const [blueprints] = useState<BlueprintItem[]>(INITIAL_BLUEPRINTS);
+  const [resources] = useState<ResourceTool[]>(INITIAL_RESOURCES);
+  const [userData, setUserData] = useState<UserDashboardData>(INITIAL_USER_DASHBOARD);
+  const [collabApplications, setCollabApplications] = useState<CollabApplication[]>(
+    INITIAL_USER_DASHBOARD.collabApplications
+  );
+
+  // Modals
+  const [isRulesOpen, setIsRulesOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isListProjectOpen, setIsListProjectOpen] = useState(false);
+  const [isSubmitBuildOpen, setIsSubmitBuildOpen] = useState(false);
+  const [isCollabOpen, setIsCollabOpen] = useState(false);
+  const [selectedCollabProject, setSelectedCollabProject] = useState<ProjectItem | null>(null);
+  const [selectedChallengeId, setSelectedChallengeId] = useState<string>("");
 
-  // Composer Form State
-  const [content, setContent] = useState("");
-  const [selectedProjectTag, setSelectedProjectTag] = useState("#hardware");
-  const [githubUrl, setGithubUrl] = useState("");
-  const [demoUrl, setDemoUrl] = useState("");
-  const [terminalSnippet, setTerminalSnippet] = useState("");
-  const [showSnippetInput, setShowSnippetInput] = useState(false);
-  const [showUrlInputs, setShowUrlInputs] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const composerInputRef = useRef<HTMLTextAreaElement>(null);
+  // Countdown timer string (safe for SSR)
+  const [activeSprintCountdown, setActiveSprintCountdown] = useState<string>("");
 
-  const supabase = createClient();
-
-  // Load real Supabase posts if any exist
+  // Hydrate state from localStorage on client mount
   useEffect(() => {
-    async function fetchDatabasePosts() {
-      try {
-        const { data, error } = await supabase
-          .from("ship_logs")
-          .select("*, author:profiles(*), challenge:challenges(*)")
-          .order("created_at", { ascending: false });
+    if (typeof window === "undefined") return;
 
-        if (data && data.length > 0) {
-          const formattedDbPosts: BuilderPost[] = data.map((item: any) => ({
-            id: item.id,
-            author: {
-              name: item.author?.full_name || item.author?.username || "Builder",
-              username: item.author?.username || "builder",
-              avatar: item.author?.avatar_url || "https://api.dicebear.com/7.x/bottts/svg?seed=builder",
-              streak: item.author?.streak_count || 1,
-            },
-            content: item.content,
-            timestamp: "Just now",
-            tags: item.tags || ["#hardware"],
-            challengeTag: item.challenge?.title,
-            githubUrl: item.github_url,
-            demoUrl: item.demo_url,
-            upvotes: item.upvotes_count || 0,
-            hasUpvoted: false,
-          }));
+    try {
+      const storedPosts = localStorage.getItem("remorph_posts");
+      if (storedPosts) setPosts(JSON.parse(storedPosts));
 
-          // Merge db posts with realistic community feed
-          setPosts([...formattedDbPosts, ...INITIAL_POSTS]);
-        }
-      } catch (err) {
-        console.warn("Using local workspace feed state:", err);
-      }
+      const storedProjects = localStorage.getItem("remorph_projects");
+      if (storedProjects) setProjects(JSON.parse(storedProjects));
+
+      const storedChallenges = localStorage.getItem("remorph_challenges");
+      if (storedChallenges) setChallenges(JSON.parse(storedChallenges));
+
+      const storedUser = localStorage.getItem("remorph_user");
+      if (storedUser) setUserData(JSON.parse(storedUser));
+
+      const storedApps = localStorage.getItem("remorph_collab_apps");
+      if (storedApps) setCollabApplications(JSON.parse(storedApps));
+    } catch (e) {
+      console.error("Failed to load local storage state:", e);
     }
-    fetchDatabasePosts();
   }, []);
 
-  const handlePostShip = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!content.trim()) return;
-
-    setIsSubmitting(true);
-
-    const newPost: BuilderPost = {
-      id: `local-${Date.now()}`,
-      author: {
-        name: profile?.full_name || (user?.email ? user.email.split("@")[0] : "You (Builder)"),
-        username: profile?.username || "you",
-        avatar: profile?.avatar_url || "https://api.dicebear.com/7.x/bottts/svg?seed=you",
-        streak: (profile?.streak_count || 0) + 1,
-      },
-      content: content.trim(),
-      timestamp: "Just now",
-      tags: [selectedProjectTag],
-      githubUrl: githubUrl.trim() || undefined,
-      demoUrl: demoUrl.trim() || undefined,
-      snippet: terminalSnippet.trim()
-        ? {
-            type: "terminal",
-            title: "output.log",
-            body: terminalSnippet.trim(),
-          }
-        : undefined,
-      upvotes: 1,
-      hasUpvoted: true,
-    };
-
-    // Trigger celebration confetti
-    try {
-      confetti({
-        particleCount: 50,
-        spread: 60,
-        origin: { y: 0.6 },
-        colors: ["#10b981", "#34d399", "#f59e0b"],
-      });
-    } catch {}
-
-    // Prepend immediately to live feed state
-    setPosts([newPost, ...posts]);
-
-    // If authenticated, persist to Supabase
-    if (user) {
-      try {
-        await (supabase.from("ship_logs") as any).insert({
-          author_id: user.id,
-          content: content.trim(),
-          tags: [selectedProjectTag],
-          github_url: githubUrl.trim() || null,
-          demo_url: demoUrl.trim() || null,
-          upvotes_count: 1,
-        });
-      } catch (err) {
-        console.warn("Failed persisting to Supabase:", err);
-      }
+  // Update countdown timer safely on client
+  useEffect(() => {
+    const activeChallenge = challenges.find((c) => c.status === "active");
+    if (activeChallenge) {
+      setActiveSprintCountdown(formatCountdown(activeChallenge.endsAt));
+      const interval = setInterval(() => {
+        setActiveSprintCountdown(formatCountdown(activeChallenge.endsAt));
+      }, 1000);
+      return () => clearInterval(interval);
     }
+  }, [challenges]);
 
-    // Reset Form
-    setContent("");
-    setGithubUrl("");
-    setDemoUrl("");
-    setTerminalSnippet("");
-    setShowSnippetInput(false);
-    setShowUrlInputs(false);
-    setIsSubmitting(false);
+  // Sync state helpers
+  const savePosts = (newPosts: ShipPost[]) => {
+    setPosts(newPosts);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("remorph_posts", JSON.stringify(newPosts));
+    }
+  };
+
+  const saveProjects = (newProjects: ProjectItem[]) => {
+    setProjects(newProjects);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("remorph_projects", JSON.stringify(newProjects));
+    }
+  };
+
+  const saveUserData = (newData: UserDashboardData) => {
+    setUserData(newData);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("remorph_user", JSON.stringify(newData));
+    }
+  };
+
+  const saveCollabApplications = (newApps: CollabApplication[]) => {
+    setCollabApplications(newApps);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("remorph_collab_apps", JSON.stringify(newApps));
+    }
+  };
+
+  // HANDLERS
+  const handleAddPost = (newPost: ShipPost) => {
+    const updated = [newPost, ...posts];
+    savePosts(updated);
+
+    // Update user stats
+    const updatedUser = {
+      ...userData,
+      totalShips: userData.totalShips + 1,
+      xpPoints: userData.xpPoints + 50,
+      streakCount: userData.streakCount + 1,
+    };
+    saveUserData(updatedUser);
+
+    confetti({
+      particleCount: 40,
+      spread: 60,
+      origin: { y: 0.8 },
+      colors: ["#10b981", "#3b82f6", "#f59e0b"],
+    });
   };
 
   const handleToggleUpvote = (postId: string) => {
-    setPosts(
-      posts.map((post) => {
-        if (post.id === postId) {
-          const nextUpvoted = !post.hasUpvoted;
-          return {
-            ...post,
-            hasUpvoted: nextUpvoted,
-            upvotes: nextUpvoted ? post.upvotes + 1 : Math.max(0, post.upvotes - 1),
-          };
-        }
-        return post;
-      })
+    const updated = posts.map((p) => {
+      if (p.id === postId) {
+        const hasUpvoted = !p.hasUpvoted;
+        return {
+          ...p,
+          hasUpvoted,
+          upvotes: hasUpvoted ? p.upvotes + 1 : p.upvotes - 1,
+        };
+      }
+      return p;
+    });
+    savePosts(updated);
+  };
+
+  const handleAddComment = (postId: string, comment: Comment) => {
+    const updated = posts.map((p) => {
+      if (p.id === postId) {
+        return {
+          ...p,
+          comments: [...p.comments, comment],
+        };
+      }
+      return p;
+    });
+    savePosts(updated);
+  };
+
+  const handleListProject = (newProject: ProjectItem) => {
+    const updated = [newProject, ...projects];
+    saveProjects(updated);
+
+    const updatedUser = {
+      ...userData,
+      xpPoints: userData.xpPoints + 100,
+    };
+    saveUserData(updatedUser);
+
+    confetti({
+      particleCount: 50,
+      spread: 70,
+      origin: { y: 0.8 },
+      colors: ["#10b981", "#6366f1"],
+    });
+  };
+
+  const handleOpenCollabModal = (project: ProjectItem) => {
+    setSelectedCollabProject(project);
+    setIsCollabOpen(true);
+  };
+
+  const handleSubmitCollabApplication = (application: CollabApplication) => {
+    const updatedApps = [application, ...collabApplications];
+    saveCollabApplications(updatedApps);
+
+    const updatedUser = {
+      ...userData,
+      collabApplications: [application, ...userData.collabApplications],
+    };
+    saveUserData(updatedUser);
+  };
+
+  const handleUpdateAppStatus = (appId: string, status: "Accepted" | "Declined") => {
+    const updated = collabApplications.map((app) =>
+      app.id === appId ? { ...app, status } : app
     );
+    saveCollabApplications(updated);
+
+    const updatedUser = {
+      ...userData,
+      collabApplications: updated,
+    };
+    saveUserData(updatedUser);
   };
 
-  const handleFocusComposer = (challengeTag?: string) => {
-    if (challengeTag) {
-      setSelectedProjectTag("#hardware");
-      setContent((prev) => (prev ? prev : `[${challengeTag}] `));
+  const handleSubmitBuildLog = (post: ShipPost, challengeId: string) => {
+    // Append to feed
+    handleAddPost(post);
+
+    // Increment challenge submission count
+    const updatedChallenges = challenges.map((c) =>
+      c.id === challengeId ? { ...c, submissionsCount: c.submissionsCount + 1 } : c
+    );
+    setChallenges(updatedChallenges);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("remorph_challenges", JSON.stringify(updatedChallenges));
     }
-    composerInputRef.current?.focus();
-    composerInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
-  // Filter posts
-  const filteredPosts = posts.filter((post) => {
-    if (selectedTag === "all") return true;
-    return post.tags.some((t) => t.toLowerCase() === selectedTag.toLowerCase());
-  });
+  const handleSaveAISpec = (spec: AISpec) => {
+    if (userData.savedSpecs.some((s) => s.id === spec.id)) return;
+    const updatedSpecs = [spec, ...userData.savedSpecs];
+    const updatedUser = {
+      ...userData,
+      savedSpecs: updatedSpecs,
+      xpPoints: userData.xpPoints + 25,
+    };
+    saveUserData(updatedUser);
+  };
 
-  // Sort posts
-  const sortedPosts = [...filteredPosts].sort((a, b) => {
-    if (filterMode === "top") return b.upvotes - a.upvotes;
-    return 0; // maintain chronological order
-  });
+  const handleRemoveSavedSpec = (specId: string) => {
+    const updatedSpecs = userData.savedSpecs.filter((s) => s.id !== specId);
+    const updatedUser = {
+      ...userData,
+      savedSpecs: updatedSpecs,
+    };
+    saveUserData(updatedUser);
+  };
+
+  // Nav item list
+  const navItems = [
+    {
+      id: "feed" as ViewMode,
+      label: "Live Ship Feed & Forums",
+      icon: Radio,
+      badge: `${posts.length}`,
+      accent: "text-emerald-600",
+    },
+    {
+      id: "projects" as ViewMode,
+      label: "Project Showcase & Collab",
+      icon: Rocket,
+      badge: `${projects.length}`,
+      accent: "text-blue-600",
+    },
+    {
+      id: "challenges" as ViewMode,
+      label: "Sprints & Challenges",
+      icon: Zap,
+      badge: "Active",
+      accent: "text-amber-600",
+    },
+    {
+      id: "blueprints" as ViewMode,
+      label: "Blueprint Library & Tools",
+      icon: Layers,
+      badge: `${blueprints.length}`,
+      accent: "text-indigo-600",
+    },
+    {
+      id: "ai-generator" as ViewMode,
+      label: "AI Idea & Spec Engine",
+      icon: Sparkles,
+      badge: "New",
+      accent: "text-purple-600",
+    },
+    {
+      id: "leaderboard" as ViewMode,
+      label: "Monthly Leaderboards",
+      icon: Trophy,
+      badge: "#1",
+      accent: "text-amber-600",
+    },
+    {
+      id: "dashboard" as ViewMode,
+      label: "My Builder Dashboard",
+      icon: User,
+      badge: `${userData.streakCount}d`,
+      accent: "text-emerald-600",
+    },
+  ];
+
+  const popularTags = [
+    "#hardware",
+    "#nextjs",
+    "#ai",
+    "#pcb",
+    "#cyberdeck",
+    "#embedded",
+    "#rust",
+  ];
+
+  const activeSprint = challenges.find((c) => c.status === "active") || challenges[0];
 
   return (
-    <>
+    <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          
-          {/* ================================================================= */}
-          {/* LEFT COLUMN: COMPACT NAVIGATION & TOPIC FILTERS                   */}
-          {/* ================================================================= */}
-          <aside className="lg:col-span-3 space-y-5 lg:sticky lg:top-20">
-            {/* Quick Navigation Card */}
-            <div className="bg-zinc-900/90 rounded-xl p-3 border border-zinc-800 shadow-sm text-xs font-mono space-y-1">
-              <div className="px-2 py-1.5 text-[10px] text-zinc-400 uppercase tracking-wider font-semibold">
-                Forge Workspace
+          {/* ======================================================== */}
+          {/* LEFT SIDEBAR: Persistent Module Navigation & Filters   */}
+          {/* ======================================================== */}
+          <aside className="lg:col-span-3 space-y-4 lg:sticky lg:top-20">
+            {/* Core View Switcher Card */}
+            <div className="bg-white rounded-xl border border-slate-200 p-2 shadow-xs space-y-1">
+              <div className="px-3 py-2 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
+                Workspace Modules
               </div>
-
-              <button
-                onClick={() => {
-                  setSelectedTag("all");
-                  setFilterMode("latest");
-                }}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-left ${
-                  selectedTag === "all"
-                    ? "bg-zinc-800 text-white font-semibold border border-zinc-700/80"
-                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/50"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>Live Ship Feed</span>
-                </div>
-                <span className="text-[10px] bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-400">
-                  {posts.length}
-                </span>
-              </button>
-
-              <Link
-                href="/challenges"
-                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800/50 transition-colors text-left"
-              >
-                <div className="flex items-center gap-2">
-                  <Trophy className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Sprints & Challenges</span>
-                </div>
-                <span className="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded">
-                  2 ACTIVE
-                </span>
-              </Link>
-            </div>
-
-            {/* Topic / Tag Filter List */}
-            <div className="bg-zinc-900/90 rounded-xl p-3 border border-zinc-800 shadow-sm space-y-2">
-              <div className="flex items-center justify-between px-2 pt-1 text-[10px] font-mono text-zinc-400 uppercase tracking-wider font-semibold">
-                <span>Filter by Topic</span>
-                {selectedTag !== "all" && (
-                  <button
-                    onClick={() => setSelectedTag("all")}
-                    className="text-emerald-400 hover:text-emerald-300 font-normal capitalize"
-                  >
-                    Reset
-                  </button>
-                )}
-              </div>
-
-              <div className="space-y-1 text-xs font-mono">
-                {AVAILABLE_TAGS.map((tag) => {
-                  const count =
-                    tag.id === "all"
-                      ? posts.length
-                      : posts.filter((p) => p.tags.includes(tag.id)).length;
-
-                  const isSelected = selectedTag === tag.id;
-
+              <div className="space-y-0.5">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeView === item.id;
                   return (
                     <button
-                      key={tag.id}
-                      onClick={() => setSelectedTag(tag.id)}
-                      className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg transition-all text-left ${
-                        isSelected
-                          ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-medium"
-                          : "text-zinc-400 hover:text-white hover:bg-zinc-800/40"
+                      key={item.id}
+                      onClick={() => {
+                        setActiveView(item.id);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
+                        isActive
+                          ? "bg-slate-900 text-white font-semibold shadow-xs"
+                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                       }`}
                     >
-                      <span className="flex items-center gap-1.5">
-                        <Tag className="w-3 h-3 text-zinc-400" />
-                        <span>{tag.label}</span>
+                      <div className="flex items-center gap-2.5 truncate">
+                        <Icon
+                          className={`w-4 h-4 shrink-0 ${
+                            isActive ? "text-emerald-400" : item.accent
+                          }`}
+                        />
+                        <span className="truncate">{item.label}</span>
+                      </div>
+                      <span
+                        className={`text-[10px] font-mono px-1.5 py-0.5 rounded shrink-0 ${
+                          isActive
+                            ? "bg-slate-800 text-emerald-400"
+                            : "bg-slate-100 text-slate-600"
+                        }`}
+                      >
+                        {item.badge}
                       </span>
-                      <span className="text-[11px] text-zinc-400">{count}</span>
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* Quick Metric Telemetry */}
-            <div className="bg-zinc-900/60 rounded-xl p-3 border border-zinc-800/80 text-[11px] font-mono text-zinc-400 space-y-2">
-              <div className="flex items-center justify-between border-b border-zinc-800/60 pb-1.5">
-                <span>Daily Ship Velocity</span>
-                <span className="text-emerald-400 font-semibold">+24 ships</span>
-              </div>
-              <div className="flex items-center justify-between border-b border-zinc-800/60 pb-1.5">
-                <span>Global Streak Record</span>
-                <span className="text-orange-400 font-semibold">28 days</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Auth & Backend</span>
-                <span className="text-zinc-300">Supabase DB</span>
-              </div>
-            </div>
-          </aside>
-
-          {/* ================================================================= */}
-          {/* CENTER COLUMN: QUICK-SHIP COMPOSER & LIVE SHIP-LOG FEED           */}
-          {/* ================================================================= */}
-          <main className="lg:col-span-6 space-y-4">
-            
-            {/* Quick-Ship Composer Input Box */}
-            <div className="bg-zinc-900/90 rounded-xl border border-zinc-800 shadow-md p-4 space-y-3 relative overflow-hidden">
-              <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-md bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center font-mono text-xs font-bold text-emerald-400">
-                    ⚡
-                  </div>
-                  <span className="text-xs font-mono font-semibold text-white tracking-tight">
-                    QUICK-SHIP COMPOSER
-                  </span>
-                </div>
-                <span className="text-[10px] font-mono text-zinc-400">
-                  500 chars max • Markdown enabled
+            {/* Quick Tag Filter Card */}
+            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs space-y-3">
+              <div className="flex items-center justify-between text-xs font-mono font-semibold text-slate-500 uppercase tracking-wider">
+                <span className="flex items-center gap-1.5">
+                  <Filter className="w-3.5 h-3.5" />
+                  Telemetry Tags
                 </span>
-              </div>
-
-              <form onSubmit={handlePostShip} className="space-y-3">
-                <textarea
-                  ref={composerInputRef}
-                  value={content}
-                  onChange={(e) => setContent(e.target.value.slice(0, 500))}
-                  placeholder="What did you build today? Share schematic progress, breadboard tests, commit diffs, or benchmark outputs..."
-                  rows={3}
-                  className="w-full bg-zinc-950/60 border border-zinc-800/90 rounded-lg p-3 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500/60 transition-colors resize-none font-sans"
-                />
-
-                {/* Optional Collapsible Snippet Input */}
-                {showSnippetInput && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    className="space-y-1"
-                  >
-                    <label className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider block">
-                      Terminal Output / Bench Log Snippet:
-                    </label>
-                    <textarea
-                      value={terminalSnippet}
-                      onChange={(e) => setTerminalSnippet(e.target.value)}
-                      placeholder="Paste terminal log or build command output here..."
-                      rows={3}
-                      className="w-full bg-black/80 border border-zinc-800 rounded-lg p-2.5 text-xs text-emerald-400 font-mono placeholder-zinc-600 focus:outline-none focus:border-emerald-500/60"
-                    />
-                  </motion.div>
-                )}
-
-                {/* Optional Links Input */}
-                {showUrlInputs && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono"
-                  >
-                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-950/80 border border-zinc-800">
-                      <GithubIcon className="w-3.5 h-3.5 text-zinc-400" />
-                      <input
-                        type="url"
-                        value={githubUrl}
-                        onChange={(e) => setGithubUrl(e.target.value)}
-                        placeholder="GitHub repo URL..."
-                        className="bg-transparent text-white placeholder-zinc-500 w-full focus:outline-none text-xs"
-                      />
-                    </div>
-                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-950/80 border border-zinc-800">
-                      <Globe className="w-3.5 h-3.5 text-zinc-400" />
-                      <input
-                        type="url"
-                        value={demoUrl}
-                        onChange={(e) => setDemoUrl(e.target.value)}
-                        placeholder="Live demo / video URL..."
-                        className="bg-transparent text-white placeholder-zinc-500 w-full focus:outline-none text-xs"
-                      />
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Controls & Submit Bar */}
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-zinc-800/80">
-                  <div className="flex items-center gap-1.5 text-xs font-mono">
-                    <span className="text-zinc-400 text-[11px] hidden sm:inline">Tag:</span>
-                    <select
-                      value={selectedProjectTag}
-                      onChange={(e) => setSelectedProjectTag(e.target.value)}
-                      className="bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1 text-zinc-200 text-xs focus:outline-none focus:border-emerald-500"
-                    >
-                      <option value="#hardware">#hardware</option>
-                      <option value="#pcb">#pcb</option>
-                      <option value="#ai">#ai</option>
-                      <option value="#embedded">#embedded</option>
-                      <option value="#nextjs">#nextjs</option>
-                      <option value="#rust">#rust</option>
-                    </select>
-
-                    <button
-                      type="button"
-                      onClick={() => setShowSnippetInput(!showSnippetInput)}
-                      className={`px-2 py-1 rounded-lg border text-[11px] transition-colors ${
-                        showSnippetInput
-                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                          : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-white"
-                      }`}
-                    >
-                      + Terminal Log
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setShowUrlInputs(!showUrlInputs)}
-                      className={`px-2 py-1 rounded-lg border text-[11px] transition-colors ${
-                        showUrlInputs
-                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                          : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-white"
-                      }`}
-                    >
-                      + Links
-                    </button>
-                  </div>
-
+                {selectedTag !== "all" && (
                   <button
-                    type="submit"
-                    disabled={!content.trim() || isSubmitting}
-                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black font-semibold text-xs font-mono uppercase tracking-wider transition-all shadow-sm active:scale-95"
+                    onClick={() => setSelectedTag("all")}
+                    className="text-[10px] text-emerald-700 hover:underline capitalize"
                   >
-                    <Send className="w-3 h-3" />
-                    <span>Ship Update</span>
+                    Reset
                   </button>
-                </div>
-              </form>
-            </div>
+                )}
+              </div>
 
-            {/* Feed Filter Bar */}
-            <div className="flex items-center justify-between px-1 py-1 text-xs font-mono">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 <button
-                  onClick={() => setFilterMode("latest")}
-                  className={`px-2.5 py-1 rounded-md font-medium transition-all ${
-                    filterMode === "latest"
-                      ? "bg-zinc-800 text-white border border-zinc-700"
-                      : "text-zinc-400 hover:text-white"
+                  onClick={() => {
+                    setSelectedTag("all");
+                    setActiveView("feed");
+                  }}
+                  className={`text-xs px-2.5 py-1 rounded-md font-mono transition-all border ${
+                    selectedTag === "all"
+                      ? "bg-slate-900 text-white border-slate-900"
+                      : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
                   }`}
                 >
-                  Latest Ships ({sortedPosts.length})
+                  #all
                 </button>
-                <button
-                  onClick={() => setFilterMode("top")}
-                  className={`px-2.5 py-1 rounded-md font-medium transition-all flex items-center gap-1 ${
-                    filterMode === "top"
-                      ? "bg-zinc-800 text-orange-400 border border-zinc-700"
-                      : "text-zinc-400 hover:text-zinc-200"
-                  }`}
-                >
-                  <Flame className="w-3 h-3 fill-current" />
-                  <span>Top Upvoted</span>
-                </button>
-              </div>
-
-              {selectedTag !== "all" && (
-                <span className="text-[11px] text-zinc-400">
-                  Tag: <span className="text-emerald-400 font-semibold">{selectedTag}</span>
-                </span>
-              )}
-            </div>
-
-            {/* Live Chronological Ship-Log Feed */}
-            <div className="space-y-3.5">
-              {sortedPosts.map((post) => (
-                <article
-                  key={post.id}
-                  className="bg-zinc-900/90 rounded-xl p-4 sm:p-5 border border-zinc-800/90 shadow-sm hover:border-zinc-700/80 transition-all space-y-3"
-                >
-                  {/* Card Header */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <Link href={`/u/${post.author.username}`} className="shrink-0 relative">
-                        <img
-                          src={post.author.avatar}
-                          alt={post.author.username}
-                          className="w-9 h-9 rounded-full object-cover border border-zinc-700"
-                        />
-                        {post.author.streak > 0 && (
-                          <span className="absolute -bottom-1 -right-1 px-1 rounded-full bg-orange-500 text-black text-[9px] font-mono font-bold flex items-center justify-center">
-                            🔥{post.author.streak}
-                          </span>
-                        )}
-                      </Link>
-
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <Link
-                            href={`/u/${post.author.username}`}
-                            className="text-sm font-semibold text-white hover:text-emerald-400 transition-colors truncate"
-                          >
-                            {post.author.name}
-                          </Link>
-                          <span className="text-xs font-mono text-zinc-400 truncate">
-                            @{post.author.username}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2 text-xs font-mono text-zinc-400">
-                          <span>{post.timestamp}</span>
-                          {post.challengeTag && (
-                            <>
-                              <span>•</span>
-                              <span className="text-amber-400 font-medium truncate flex items-center gap-1">
-                                <Trophy className="w-3 h-3 shrink-0" />
-                                {post.challengeTag}
-                              </span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Interactive Upvote Reaction Button */}
-                    <button
-                      onClick={() => handleToggleUpvote(post.id)}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-medium border transition-all ${
-                        post.hasUpvoted
-                          ? "bg-orange-500/15 border-orange-500/40 text-orange-400 shadow-[0_0_10px_rgba(249,115,22,0.15)]"
-                          : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-orange-400 hover:border-orange-500/30"
-                      }`}
-                    >
-                      <Flame
-                        className={`w-3.5 h-3.5 ${
-                          post.hasUpvoted ? "fill-orange-500 text-orange-500" : ""
-                        }`}
-                      />
-                      <span>{post.upvotes}</span>
-                    </button>
-                  </div>
-
-                  {/* Body Content */}
-                  <p className="text-sm text-zinc-200 leading-relaxed font-normal whitespace-pre-line">
-                    {post.content}
-                  </p>
-
-                  {/* Terminal / Code Snippet Artifact */}
-                  {post.snippet && (
-                    <div className="rounded-lg overflow-hidden border border-zinc-800 bg-black/90">
-                      <div className="px-3 py-1.5 bg-zinc-950 border-b border-zinc-800/80 flex items-center justify-between text-[11px] font-mono text-zinc-400">
-                        <div className="flex items-center gap-1.5">
-                          <Terminal className="w-3 h-3 text-emerald-400" />
-                          <span>{post.snippet.title}</span>
-                        </div>
-                        <span className="text-[10px] text-zinc-400 uppercase">TELEMETRY</span>
-                      </div>
-                      <pre className="p-3 text-xs font-mono text-emerald-400/90 overflow-x-auto leading-relaxed">
-                        <code>{post.snippet.body}</code>
-                      </pre>
-                    </div>
-                  )}
-
-                  {/* Card Footer: Tags & External Links */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-zinc-800/60">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {post.tags.map((t) => (
-                        <span
-                          key={t}
-                          onClick={() => setSelectedTag(t)}
-                          className="cursor-pointer text-[11px] font-mono text-zinc-400 hover:text-emerald-400 bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800 transition-colors"
-                        >
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-
-                    <div className="flex items-center gap-2 text-xs font-mono">
-                      {post.githubUrl && (
-                        <a
-                          href={post.githubUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-zinc-950 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition-colors"
-                        >
-                          <GithubIcon className="w-3 h-3" />
-                          <span>Repo</span>
-                          <ExternalLink className="w-2.5 h-2.5 text-zinc-400" />
-                        </a>
-                      )}
-                      {post.demoUrl && (
-                        <a
-                          href={post.demoUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-colors"
-                        >
-                          <Globe className="w-3 h-3" />
-                          <span>Live Demo</span>
-                          <ExternalLink className="w-2.5 h-2.5" />
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </main>
-
-          {/* ================================================================= */}
-          {/* RIGHT COLUMN: ACTIVE CHALLENGE & STREAKS LEADERBOARD             */}
-          {/* ================================================================= */}
-          <aside className="lg:col-span-3 space-y-5 lg:sticky lg:top-20">
-            
-            {/* Active Challenge Card */}
-            <div className="bg-zinc-900/90 rounded-xl p-4 border border-emerald-500/30 shadow-md space-y-3 relative overflow-hidden">
-              <div className="flex items-center justify-between text-xs font-mono">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold text-[10px]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  ACTIVE SPRINT
-                </span>
-                <span className="text-[11px] text-zinc-400 flex items-center gap-1">
-                  <Clock className="w-3 h-3 text-amber-400" />
-                  <span>4d 18h left</span>
-                </span>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-bold text-white tracking-tight">
-                  7-Day Hardware & Local AI Hack
-                </h3>
-                <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                  Design, wire, and prototype an ultra-compact cyberdeck, ESP32 rig, or quantized local AI terminal utility.
-                </p>
-              </div>
-
-              <div className="p-2.5 rounded-lg bg-black/50 border border-zinc-800 text-[11px] font-mono text-zinc-400 space-y-1">
-                <div className="flex items-center gap-1 text-emerald-400 font-semibold">
-                  <span>Prize:</span>
-                  <span className="text-white">$500 Hardware Grant</span>
-                </div>
-                <p className="text-[10px] text-zinc-400">Requires 2 progressive ship-logs with photos or terminal proof.</p>
-              </div>
-
-              <div className="pt-1 flex items-center gap-2">
-                <button
-                  onClick={() => handleFocusComposer("7-Day Hardware Sprint")}
-                  className="w-full py-2 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-xs font-mono uppercase tracking-wider transition-all text-center"
-                >
-                  Submit Build
-                </button>
-                <Link
-                  href="/challenges/cyberdeck-hardware-hack-2026"
-                  className="px-2.5 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 text-xs font-mono"
-                  title="View Full Brief"
-                >
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-              </div>
-            </div>
-
-            {/* Top Shipping Streaks Mini-Leaderboard */}
-            <div className="bg-zinc-900/90 rounded-xl p-4 border border-zinc-800 shadow-sm space-y-3">
-              <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
-                <div className="flex items-center gap-1.5">
-                  <Flame className="w-3.5 h-3.5 text-orange-400 fill-orange-500" />
-                  <span className="text-xs font-mono font-bold text-white tracking-tight">
-                    TOP SHIPPING STREAKS
-                  </span>
-                </div>
-                <span className="text-[10px] font-mono text-zinc-400">ACTIVE DAYS</span>
-              </div>
-
-              <div className="space-y-2">
-                {LEADERBOARD_BUILDERS.map((builder, idx) => (
-                  <Link
-                    key={builder.username}
-                    href={`/u/${builder.username}`}
-                    className="flex items-center justify-between p-2 rounded-lg hover:bg-zinc-800/60 transition-colors group"
+                {popularTags.map((tag) => (
+                  <button
+                    key={tag}
+                    onClick={() => {
+                      setSelectedTag(tag);
+                      setActiveView("feed");
+                    }}
+                    className={`text-xs px-2.5 py-1 rounded-md font-mono transition-all border ${
+                      selectedTag === tag
+                        ? "bg-slate-900 text-white border-slate-900"
+                        : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                    }`}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="font-mono text-xs text-zinc-400 w-4 text-center">
-                        #{idx + 1}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium text-zinc-200 group-hover:text-emerald-400 transition-colors truncate">
-                          {builder.name}
-                        </p>
-                        <p className="text-[10px] font-mono text-zinc-400 truncate">
-                          @{builder.username} • {builder.role}
-                        </p>
-                      </div>
-                    </div>
-
-                    <span className="shrink-0 px-2 py-0.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 font-mono text-xs font-semibold flex items-center gap-0.5">
-                      🔥{builder.streak}d
-                    </span>
-                  </Link>
+                    {tag}
+                  </button>
                 ))}
               </div>
             </div>
 
-            {/* Proof-of-Work Standard Manifesto */}
-            <div className="bg-zinc-950/60 rounded-xl p-3.5 border border-zinc-800/80 text-[11px] font-mono text-zinc-400 space-y-2">
-              <span className="text-[10px] text-zinc-400 uppercase tracking-wider block font-semibold">
-                Proof of Work Standard:
-              </span>
-              <ul className="space-y-1 text-zinc-400 text-[10px]">
-                <li>• Raw progress over polished decks</li>
-                <li>• Breadboards & commits over talk</li>
-                <li>• Max 500 characters per ship</li>
-              </ul>
+            {/* Rules & Manifesto Trigger Card */}
+            <div className="bg-slate-900 text-slate-100 rounded-xl p-4 border border-slate-800 shadow-xs space-y-3">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-400">
+                  Proof-of-Work Standards
+                </h4>
+              </div>
+              <p className="text-[11px] text-slate-300 leading-relaxed font-mono">
+                Rule #1: Post real commits & schematics, zero vaporware. Peer review over hype.
+              </p>
+              <button
+                onClick={() => setIsRulesOpen(true)}
+                className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-mono font-medium transition-colors border border-slate-700 text-center"
+              >
+                Read Community Manifesto
+              </button>
+            </div>
+
+            {/* Builder Account Pill */}
+            <div
+              onClick={() => setActiveView("dashboard")}
+              className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-xs flex items-center justify-between cursor-pointer hover:border-slate-300 transition-colors group"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <img
+                  src={userData.avatar}
+                  alt={userData.name}
+                  className="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0"
+                />
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-slate-900 truncate group-hover:text-emerald-600 transition-colors">
+                    {userData.name}
+                  </div>
+                  <div className="text-[11px] font-mono text-slate-500 truncate">
+                    @{userData.username}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1 font-mono text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded border border-orange-200 shrink-0">
+                <Flame className="w-3.5 h-3.5 fill-orange-600" />
+                <span>{userData.streakCount}d</span>
+              </div>
             </div>
           </aside>
 
+          {/* ======================================================== */}
+          {/* CENTER COLUMN: Interactive Multi-View Main Workspace     */}
+          {/* ======================================================== */}
+          <main className="lg:col-span-6 space-y-6 min-w-0">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeView}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.15 }}
+              >
+                {/* 1. FEED & DISCUSSION VIEW */}
+                {activeView === "feed" && (
+                  <FeedView
+                    posts={posts}
+                    onAddPost={handleAddPost}
+                    onToggleUpvote={handleToggleUpvote}
+                    onAddComment={handleAddComment}
+                    selectedTag={selectedTag}
+                    onSelectTag={setSelectedTag}
+                    userProfile={{
+                      name: userData.name,
+                      username: userData.username,
+                      avatar: userData.avatar,
+                      streak: userData.streakCount,
+                    }}
+                  />
+                )}
+
+                {/* 2. PROJECT SHOWCASE & TEAM COLLAB VIEW */}
+                {activeView === "projects" && (
+                  <ProjectsView
+                    projects={projects}
+                    onRequestCollab={handleOpenCollabModal}
+                    onOpenListProjectModal={() => setIsListProjectOpen(true)}
+                  />
+                )}
+
+                {/* 3. SPRINTS & CHALLENGES VIEW */}
+                {activeView === "challenges" && (
+                  <ChallengesView
+                    challenges={challenges}
+                    onSubmitBuild={(ch) => {
+                      setSelectedChallengeId(ch.id);
+                      setIsSubmitBuildOpen(true);
+                    }}
+                  />
+                )}
+
+                {/* 4. BLUEPRINT LIBRARY & RESOURCES VIEW */}
+                {activeView === "blueprints" && (
+                  <BlueprintsView blueprints={blueprints} resources={resources} />
+                )}
+
+                {/* 5. AI IDEA & SPEC GENERATOR VIEW */}
+                {activeView === "ai-generator" && (
+                  <AIGeneratorView
+                    onSaveSpec={handleSaveAISpec}
+                    savedSpecIds={userData.savedSpecs.map((s) => s.id)}
+                  />
+                )}
+
+                {/* 6. MONTHLY LEADERBOARD VIEW */}
+                {activeView === "leaderboard" && (
+                  <LeaderboardView monthlyData={MONTHLY_LEADERBOARD} />
+                )}
+
+                {/* 7. BUILDER DASHBOARD & ACCOUNT VIEW */}
+                {activeView === "dashboard" && (
+                  <DashboardView
+                    userData={userData}
+                    userProjects={projects.filter(
+                      (p) => p.owner.username === userData.username
+                    )}
+                    collabApplications={collabApplications}
+                    onOpenListProject={() => setIsListProjectOpen(true)}
+                    onUpdateAppStatus={handleUpdateAppStatus}
+                    onRemoveSavedSpec={handleRemoveSavedSpec}
+                  />
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </main>
+
+          {/* ======================================================== */}
+          {/* RIGHT SIDEBAR: Active Sprint, Top Streaks, Actions       */}
+          {/* ======================================================== */}
+          <aside className="lg:col-span-3 space-y-4 lg:sticky lg:top-20">
+            {/* Active Sprint Widget */}
+            {activeSprint && (
+              <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-mono font-medium bg-amber-50 text-amber-800 border border-amber-200">
+                    <Zap className="w-3.5 h-3.5 text-amber-600" />
+                    Active Sprint
+                  </span>
+                  <span className="text-[11px] font-mono text-slate-500 flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {activeSprintCountdown || "Calculating..."}
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 leading-snug">
+                    {activeSprint.title}
+                  </h3>
+                  <p className="text-xs text-slate-600 mt-1 line-clamp-2">
+                    {activeSprint.tagline}
+                  </p>
+                </div>
+
+                <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5">
+                  <div className="flex justify-between text-xs font-mono">
+                    <span className="text-slate-500">Prize Grant:</span>
+                    <span className="font-bold text-slate-900">{activeSprint.prizePool}</span>
+                  </div>
+                  <div className="flex justify-between text-xs font-mono">
+                    <span className="text-slate-500">Verified Ships:</span>
+                    <span className="font-bold text-emerald-700">
+                      {activeSprint.submissionsCount} / {activeSprint.maxSlots || 50}
+                    </span>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mt-1">
+                    <div
+                      className="bg-emerald-600 h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          (activeSprint.submissionsCount / (activeSprint.maxSlots || 50)) * 100
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setSelectedChallengeId(activeSprint.id);
+                    setIsSubmitBuildOpen(true);
+                  }}
+                  className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition-colors shadow-xs"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Submit Sprint Build</span>
+                </button>
+              </div>
+            )}
+
+            {/* Top Shipping Streaks Mini-Leaderboard */}
+            <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-slate-700">
+                  <Flame className="w-4 h-4 text-orange-600 fill-orange-600" />
+                  <span>Top Shipping Streaks</span>
+                </div>
+                <button
+                  onClick={() => setActiveView("leaderboard")}
+                  className="text-[11px] font-mono text-emerald-700 hover:underline"
+                >
+                  View All
+                </button>
+              </div>
+
+              <div className="space-y-2 pt-1">
+                {(MONTHLY_LEADERBOARD["November 2026"] || []).slice(0, 5).map((row) => (
+                  <div
+                    key={row.username}
+                    className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="text-[11px] font-mono font-bold text-slate-400 w-4">
+                        #{row.rank}
+                      </span>
+                      <img
+                        src={row.avatar}
+                        alt={row.name}
+                        className="w-7 h-7 rounded-full object-cover border border-slate-200 shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-slate-900 truncate">
+                          {row.name}
+                        </div>
+                        <div className="text-[10px] font-mono text-slate-500 truncate">
+                          @{row.username}
+                        </div>
+                      </div>
+                    </div>
+
+                    <span className="inline-flex items-center gap-1 font-mono text-xs font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-200 shrink-0">
+                      <Flame className="w-3 h-3 fill-orange-600" />
+                      {row.streakDays}d
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Quick Community Action Bar */}
+            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs space-y-2">
+              <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
+                Quick Actions
+              </div>
+
+              <button
+                onClick={() => setIsListProjectOpen(true)}
+                className="w-full flex items-center justify-between p-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-medium text-slate-800 transition-colors text-left"
+              >
+                <div className="flex items-center gap-2">
+                  <Rocket className="w-3.5 h-3.5 text-blue-600" />
+                  <span>List New Project</span>
+                </div>
+                <ArrowRight className="w-3 h-3 text-slate-400" />
+              </button>
+
+              <button
+                onClick={() => setActiveView("ai-generator")}
+                className="w-full flex items-center justify-between p-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-medium text-slate-800 transition-colors text-left"
+              >
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                  <span>Generate Build Blueprint</span>
+                </div>
+                <ArrowRight className="w-3 h-3 text-slate-400" />
+              </button>
+
+              <button
+                onClick={() => setActiveView("blueprints")}
+                className="w-full flex items-center justify-between p-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-medium text-slate-800 transition-colors text-left"
+              >
+                <div className="flex items-center gap-2">
+                  <Layers className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Browse Free Grants & Tools</span>
+                </div>
+                <ArrowRight className="w-3 h-3 text-slate-400" />
+              </button>
+            </div>
+          </aside>
         </div>
       </div>
 
+      {/* ======================================================== */}
+      {/* INTERACTIVE MODALS                                       */}
+      {/* ======================================================== */}
+      <RulesModal isOpen={isRulesOpen} onClose={() => setIsRulesOpen(false)} />
+
+      <CollabModal
+        isOpen={isCollabOpen}
+        project={selectedCollabProject}
+        onClose={() => {
+          setIsCollabOpen(false);
+          setSelectedCollabProject(null);
+        }}
+        onSubmitApplication={handleSubmitCollabApplication}
+      />
+
+      <ListProjectModal
+        isOpen={isListProjectOpen}
+        onClose={() => setIsListProjectOpen(false)}
+        onListProject={handleListProject}
+      />
+
+      <SubmitBuildModal
+        isOpen={isSubmitBuildOpen}
+        challenges={challenges}
+        preselectedChallengeId={selectedChallengeId}
+        onClose={() => setIsSubmitBuildOpen(false)}
+        onSubmitBuild={handleSubmitBuildLog}
+      />
+
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
-    </>
+    </div>
   );
 }

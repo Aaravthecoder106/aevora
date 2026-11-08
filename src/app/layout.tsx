@@ -16,9 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Remorph — Proof-of-Work Hub for Builders",
+  title: "Remorph Forge — Engineering Proof-of-Work Platform",
   description:
-    "Persistent feed, builder profiles, and community hardware & software challenges. Product Hunt meets GitHub activity feed.",
+    "Community workspace for hardware and software builders. Proof-of-work feed, collaborative projects, engineering blueprints, and timed challenges.",
 };
 
 export default function RootLayout({
@@ -29,35 +29,34 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#09090b] text-[#f4f4f5] relative selection:bg-emerald-500 selection:text-black">
-        {/* Subtle Ambient Mesh & Grid Background */}
-        <div className="fixed inset-0 bg-grid-pattern pointer-events-none opacity-40 z-0" />
-        <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[400px] bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(16,185,129,0.08),transparent)] pointer-events-none z-0" />
-        <div className="fixed top-1/3 -right-40 w-[500px] h-[500px] bg-[radial-gradient(ellipse_50%_50%_at_50%_50%,rgba(249,115,22,0.04),transparent)] pointer-events-none z-0" />
+      <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 relative selection:bg-emerald-200 selection:text-emerald-950">
+        {/* Subtle Ambient Engineering Grid & Radiance Background */}
+        <div className="fixed inset-0 bg-grid-pattern pointer-events-none opacity-60 z-0" />
+        <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[350px] bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(16,185,129,0.06),transparent)] pointer-events-none z-0" />
 
         <AuthProvider>
           <div className="relative z-10 flex flex-col min-h-screen">
-            <Suspense fallback={<div className="h-16 border-b border-white/[0.08]" />}>
+            <Suspense fallback={<div className="h-14 border-b border-slate-200 bg-white" />}>
               <Navbar />
             </Suspense>
-            <main className="flex-1 pb-16">{children}</main>
+            <main className="flex-1">{children}</main>
 
-            {/* Minimalist Footer */}
-            <footer className="border-t border-white/[0.06] py-8 text-center text-xs font-mono text-zinc-500 relative z-10">
-              <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            {/* Engineering Footer */}
+            <footer className="border-t border-slate-200 bg-white/80 backdrop-blur py-5 text-center text-xs font-mono text-slate-500 relative z-10">
+              <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-emerald-400 font-bold">R⚡</span>
-                  <span className="text-zinc-400">REMORPH FORGE</span>
-                  <span>— Proof of Work for Builders</span>
+                  <span className="font-bold text-emerald-600">REMORPH FORGE</span>
+                  <span>/</span>
+                  <span>Verifiable Proof of Work</span>
                 </div>
-                <div className="flex items-center gap-4 text-[11px] text-zinc-400">
-                  <span>Supabase Powered</span>
+                <div className="flex items-center gap-4 text-[11px] text-slate-500">
+                  <span>Hardware & Systems Software</span>
                   <span>•</span>
-                  <span>Hardware & Software</span>
+                  <span>Community Standards</span>
                   <span>•</span>
-                  <span>Zero AI Slop</span>
+                  <span>v2.4.0</span>
                 </div>
               </div>
             </footer>
