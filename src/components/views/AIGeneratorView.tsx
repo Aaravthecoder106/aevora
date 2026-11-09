@@ -26,6 +26,7 @@ export function AIGeneratorView({ onSaveSpec, savedSpecIds }: AIGeneratorViewPro
     "ESP32-S3",
     "Next.js App Router",
   ]);
+  const [customPrompt, setCustomPrompt] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [generationStep, setGenerationStep] = useState<string>("");
   const [currentSpec, setCurrentSpec] = useState<AISpec | null>(null);
@@ -81,6 +82,7 @@ export function AIGeneratorView({ onSaveSpec, savedSpecIds }: AIGeneratorViewPro
           domain,
           difficulty,
           availableHardware: selectedHardware,
+          customPrompt: customPrompt.trim(),
         }),
       });
 
@@ -132,14 +134,17 @@ ${currentSpec.roadmapDays.map((r) => `### ${r.day}: ${r.task}\nDeliverable: ${r.
         <div className="flex items-center gap-2 mb-1">
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-emerald-950/40 text-emerald-400 border border-emerald-500/30">
             <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-            AI Build Spec Engine
+            AI Idea & Spec Generator
+          </span>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-950 text-zinc-400 border border-zinc-800">
+            Google Gemini Powered
           </span>
         </div>
         <h2 className="text-xl font-bold text-zinc-100 tracking-tight">
-          AI Engineering Blueprint & BOM Generator
+          AI Idea & Engineering Spec Generator
         </h2>
         <p className="text-xs text-zinc-400 font-mono mt-0.5">
-          Generate realistic, vetted system architecture specs, bill of materials, and a 7-day milestone roadmap based on your selected hardware stack.
+          Generate realistic, vetted system architecture specs, bill of materials (BOM), and a milestone execution roadmap based on your hardware stack and requirements.
         </p>
       </div>
 
@@ -217,6 +222,23 @@ ${currentSpec.roadmapDays.map((r) => `### ${r.day}: ${r.task}\nDeliverable: ${r.
               );
             })}
           </div>
+        </div>
+
+        {/* Step 4: Optional Concept & Specific Requirements */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-xs font-mono font-semibold uppercase tracking-wider text-zinc-400">
+              4. Concept & Specific Requirements <span className="text-zinc-500 font-normal lowercase">(optional)</span>
+            </label>
+            <span className="text-[10px] font-mono text-zinc-500">{customPrompt.length}/400</span>
+          </div>
+          <textarea
+            value={customPrompt}
+            onChange={(e) => setCustomPrompt(e.target.value.slice(0, 400))}
+            placeholder="Describe your vision, target application, or specific constraints... (e.g. 'Build an off-grid solar LoRa mesh node that relays wildfire sensor frames to a Next.js live telemetry map with sub-100ms packet updates')"
+            rows={3}
+            className="w-full p-3 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-hidden focus:border-emerald-500 font-mono resize-none transition-colors"
+          />
         </div>
 
         {/* Generate CTA Button */}

@@ -751,7 +751,7 @@ export default function AevoraCommunityPage() {
     },
     {
       id: "ai-generator" as ViewMode,
-      label: "AI Idea & Spec Engine",
+      label: "AI Idea Generator",
       icon: Sparkles,
       badge: "AI",
       accent: "text-purple-400",
