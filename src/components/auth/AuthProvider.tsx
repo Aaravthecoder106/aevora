@@ -16,7 +16,7 @@ interface AuthContextType {
   profile: Profile | null;
   session: Session | null;
   isLoading: boolean;
-  signInWithGithub: () => Promise<void>;
+  signInWithGithub: () => Promise<{ error: any; setupRequired?: boolean; config?: any }>;
   signInWithDiscord: () => Promise<void>;
   signInWithOtp: (email: string) => Promise<{ error: any }>;
   signUpWithPassword: (email: string, password: string, metadata: SignUpMetadata) => Promise<{ error: any }>;
@@ -30,7 +30,7 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   session: null,
   isLoading: true,
-  signInWithGithub: async () => {},
+  signInWithGithub: async () => ({ error: null }),
   signInWithDiscord: async () => {},
   signInWithOtp: async () => ({ error: null }),
   signUpWithPassword: async () => ({ error: null }),
@@ -91,12 +91,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signInWithGithub = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "github",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+    try {
+      const checkRes = await fetch("/api/auth/provider-status?provider=github");
+      const statusData = await checkRes.json();
+
+      if (!statusData.enabled) {
+        return {
+          error: {
+            message:
+              "GitHub OAuth is not configured on this Supabase project yet.",
+          },
+          setupRequired: true,
+          config: statusData,
+        };
+      }
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "github",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      return { error, setupRequired: false, config: null };
+    } catch (err: any) {
+      return {
+        error: { message: err.message || "Failed to initiate GitHub authentication." },
+        setupRequired: false,
+      };
+    }
   };
 
   const signInWithDiscord = async () => {

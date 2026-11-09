@@ -18,6 +18,7 @@ import {
 import { GithubIcon } from "@/components/ui/Icons";
 import { useAuth } from "./AuthProvider";
 import { supabase } from "@/lib/supabase";
+import { GithubSetupModal } from "./GithubSetupModal";
 
 export function AevoraAuthGate() {
   const {
@@ -36,6 +37,11 @@ export function AevoraAuthGate() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // GitHub OAuth setup modal state
+  const [isGithubSetupOpen, setIsGithubSetupOpen] = useState(false);
+  const [githubConfig, setGithubConfig] = useState<any>(null);
+  const [isGithubLoading, setIsGithubLoading] = useState(false);
 
   // Live platform stats
   const [stats, setStats] = useState({
@@ -108,6 +114,24 @@ export function AevoraAuthGate() {
       setErrorMessage(err.message || "An unexpected authentication error occurred.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleGithubClick = async () => {
+    setErrorMessage(null);
+    setIsGithubLoading(true);
+    try {
+      const res = await signInWithGithub();
+      if (res?.setupRequired) {
+        setGithubConfig(res.config);
+        setIsGithubSetupOpen(true);
+      } else if (res?.error) {
+        setErrorMessage(res.error.message);
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || "Failed to initiate GitHub authentication.");
+    } finally {
+      setIsGithubLoading(false);
     }
   };
 
@@ -371,15 +395,27 @@ export function AevoraAuthGate() {
             {/* GitHub OAuth Button */}
             <button
               type="button"
-              onClick={() => signInWithGithub()}
-              className="w-full py-2.5 px-4 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-zinc-200 text-xs font-mono font-medium rounded-lg transition-all flex items-center justify-center gap-2"
+              disabled={isGithubLoading}
+              onClick={handleGithubClick}
+              className="w-full py-2.5 px-4 bg-zinc-950 hover:bg-zinc-800 disabled:opacity-50 border border-zinc-800 text-zinc-200 text-xs font-mono font-medium rounded-lg transition-all flex items-center justify-center gap-2 group"
             >
-              <GithubIcon className="w-4 h-4" />
-              <span>Continue with GitHub</span>
+              <GithubIcon className="w-4 h-4 text-zinc-400 group-hover:text-zinc-100 transition-colors" />
+              <span>{isGithubLoading ? "Checking GitHub Provider..." : "Continue with GitHub"}</span>
             </button>
           </div>
         </div>
       </div>
+
+      {/* GitHub OAuth Setup Instructions Modal */}
+      <GithubSetupModal
+        isOpen={isGithubSetupOpen}
+        onClose={() => setIsGithubSetupOpen(false)}
+        config={githubConfig}
+        onSwitchToPassword={() => {
+          setMode("signin");
+          if (!email) setEmail("ay473671@gmail.com");
+        }}
+      />
     </div>
   );
 }

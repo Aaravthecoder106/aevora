@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Mail, Lock, ShieldCheck, ArrowRight, Loader2, CheckCircle2, User, AlertCircle, Cpu, Sparkles, Layers } from "lucide-react";
 import { GithubIcon } from "../ui/Icons";
 import { useAuth } from "./AuthProvider";
+import { GithubSetupModal } from "./GithubSetupModal";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -23,6 +24,28 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+
+  const [isGithubSetupOpen, setIsGithubSetupOpen] = useState(false);
+  const [githubConfig, setGithubConfig] = useState<any>(null);
+  const [isGithubLoading, setIsGithubLoading] = useState(false);
+
+  const handleGithubClick = async () => {
+    setErrorMessage("");
+    setIsGithubLoading(true);
+    try {
+      const res = await signInWithGithub();
+      if (res?.setupRequired) {
+        setGithubConfig(res.config);
+        setIsGithubSetupOpen(true);
+      } else if (res?.error) {
+        setErrorMessage(res.error.message);
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || "Failed to initiate GitHub authentication.");
+    } finally {
+      setIsGithubLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -259,13 +282,26 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
             {/* GitHub OAuth */}
             <button
-              onClick={() => signInWithGithub()}
-              className="w-full py-2 px-4 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-zinc-200 text-xs font-mono font-medium rounded-lg transition-all flex items-center justify-center gap-2"
+              type="button"
+              disabled={isGithubLoading}
+              onClick={handleGithubClick}
+              className="w-full py-2 px-4 bg-zinc-950 hover:bg-zinc-800 disabled:opacity-50 border border-zinc-800 text-zinc-200 text-xs font-mono font-medium rounded-lg transition-all flex items-center justify-center gap-2"
             >
-              <GithubIcon className="w-4 h-4" />
-              <span>Continue with GitHub</span>
+              <GithubIcon className="w-4 h-4 text-zinc-400" />
+              <span>{isGithubLoading ? "Checking GitHub Provider..." : "Continue with GitHub"}</span>
             </button>
           </motion.div>
+
+          {/* GitHub OAuth Setup Instructions Modal */}
+          <GithubSetupModal
+            isOpen={isGithubSetupOpen}
+            onClose={() => setIsGithubSetupOpen(false)}
+            config={githubConfig}
+            onSwitchToPassword={() => {
+              setMode("signin");
+              if (!email) setEmail("ay473671@gmail.com");
+            }}
+          />
         </div>
       )}
     </AnimatePresence>
