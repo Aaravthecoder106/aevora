@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { Navbar } from "@/components/layout/Navbar";
+import { Analytics } from "@vercel/analytics/next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -61,6 +62,7 @@ export default function RootLayout({
             </footer>
           </div>
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   );
