@@ -94,12 +94,14 @@ export function AevoraAuthGate() {
         if (error) {
           setErrorMessage(error.message);
         } else {
-          setSuccessMessage("Account created successfully! Connecting your workspace...");
+          setSuccessMessage("Authenticated successfully! Connecting your workspace...");
         }
       } else {
         const { error } = await signInWithPassword(email, password);
         if (error) {
           setErrorMessage(error.message);
+        } else {
+          setSuccessMessage("Authenticated successfully! Connecting your workspace...");
         }
       }
     } catch (err: any) {

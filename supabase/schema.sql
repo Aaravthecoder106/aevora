@@ -59,41 +59,60 @@ security definer
 set search_path = public
 as $$
 declare
-  raw_user text;
+  desired_username text;
+  final_username text;
   display_name text;
-  avatar text;
   user_role text;
+  avatar text;
 begin
-  raw_user := coalesce(
+  desired_username := coalesce(
     new.raw_user_meta_data->>'username',
     new.raw_user_meta_data->>'user_name',
     new.raw_user_meta_data->>'preferred_username',
     split_part(coalesce(new.email, 'builder'), '@', 1)
   );
+
+  desired_username := lower(regexp_replace(desired_username, '[^a-zA-Z0-9_]', '', 'g'));
+  if length(desired_username) = 0 then
+    desired_username := 'builder_' || substr(new.id::text, 1, 6);
+  end if;
+
+  if exists (select 1 from public.profiles where username = desired_username and id != new.id) then
+    final_username := desired_username || '_' || substr(new.id::text, 1, 4);
+  else
+    final_username := desired_username;
+  end if;
+
   display_name := coalesce(
     new.raw_user_meta_data->>'full_name',
     new.raw_user_meta_data->>'name',
-    raw_user
+    final_username
   );
-  avatar := coalesce(
-    new.raw_user_meta_data->>'avatar_url',
-    new.raw_user_meta_data->>'picture',
-    'https://api.dicebear.com/7.x/bottts/svg?seed=' || raw_user
-  );
+
   user_role := coalesce(
     new.raw_user_meta_data->>'role',
     'Hardware Hacker'
   );
 
+  avatar := coalesce(
+    new.raw_user_meta_data->>'avatar_url',
+    new.raw_user_meta_data->>'picture',
+    'https://api.dicebear.com/7.x/bottts/svg?seed=' || final_username
+  );
+
   insert into public.profiles (id, username, full_name, avatar_url, role)
   values (
     new.id,
-    lower(regexp_replace(raw_user, '[^a-zA-Z0-9_]', '_', 'g')) || '_' || substr(new.id::text, 1, 4),
+    final_username,
     display_name,
     avatar,
     user_role
   )
-  on conflict (id) do nothing;
+  on conflict (id) do update set
+    username = excluded.username,
+    full_name = excluded.full_name,
+    role = excluded.role,
+    avatar_url = excluded.avatar_url;
   return new;
 end;
 $$;
@@ -102,6 +121,20 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- Auto-confirm newly registered users so verification never halts onboarding
+create or replace function public.auto_confirm_new_user()
+returns trigger as $$
+begin
+  new.email_confirmed_at = coalesce(new.email_confirmed_at, now());
+  return new;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists tr_auto_confirm_user on auth.users;
+create trigger tr_auto_confirm_user
+  before insert on auth.users
+  for each row execute function public.auto_confirm_new_user();
 
 -- ==============================================================================
 -- TABLE: CHALLENGES (Sprints & Bounties)

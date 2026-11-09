@@ -45,16 +45,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string, retries = 2) => {
     try {
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", userId)
-        .single();
+        .maybeSingle();
 
       if (data && !error) {
         setProfile(data as Profile);
+      } else if (retries > 0) {
+        setTimeout(() => fetchProfile(userId, retries - 1), 350);
       }
     } catch (e) {
       console.error("Error fetching profile:", e);
@@ -130,19 +132,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     });
 
-    if (res.data.user && !res.error) {
-      // Upsert profile directly in case trigger delay
-      await supabase.from("profiles").upsert({
-        id: res.data.user.id,
-        username: cleanUsername,
-        full_name: metadata.fullName.trim(),
-        role: metadata.role,
-        avatar_url: `https://api.dicebear.com/7.x/bottts/svg?seed=${cleanUsername}`,
+    // Case 1: Sign up failed
+    if (res.error) {
+      const errMsg = res.error.message.toLowerCase();
+      // If already registered, attempt seamless sign in
+      if (errMsg.includes("already registered") || errMsg.includes("already exists") || errMsg.includes("already in use")) {
+        const signInRes = await supabase.auth.signInWithPassword({ email, password });
+        if (signInRes.data.session && signInRes.data.user) {
+          setSession(signInRes.data.session);
+          setUser(signInRes.data.user);
+          await fetchProfile(signInRes.data.user.id);
+          return { error: null };
+        }
+        return { error: signInRes.error || res.error };
+      }
+      return { error: res.error };
+    }
+
+    // Case 2: Sign up succeeded, but no session returned yet
+    // Because PostgreSQL trigger automatically confirmed email_confirmed_at, sign in immediately!
+    if (!res.data.session) {
+      const signInRes = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
+
+      if (signInRes.data.session && signInRes.data.user) {
+        setSession(signInRes.data.session);
+        setUser(signInRes.data.user);
+        await fetchProfile(signInRes.data.user.id);
+        return { error: null };
+      }
+      if (signInRes.error) {
+        return { error: signInRes.error };
+      }
+    }
+
+    // Case 3: Session is directly available
+    if (res.data.session && res.data.user) {
+      setSession(res.data.session);
+      setUser(res.data.user);
       await fetchProfile(res.data.user.id);
     }
 
-    return { error: res.error };
+    return { error: null };
   };
 
   const signInWithPassword = async (email: string, password: string) => {
@@ -150,7 +183,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       password,
     });
-    if (res.data.user && !res.error) {
+    if (res.data.session && res.data.user && !res.error) {
+      setSession(res.data.session);
+      setUser(res.data.user);
       await fetchProfile(res.data.user.id);
     }
     return { error: res.error };

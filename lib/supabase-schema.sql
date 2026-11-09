@@ -1,205 +1,454 @@
--- Remorph Forge Community Database Schema (PostgreSQL / Supabase)
--- Covers: users, projects, collab_roles, ship_logs, forum_threads,
--- thread_comments, challenges, blueprints, monthly_leaderboard, saved_blueprints
+-- ==============================================================================
+-- AEVORA // FORGE — PRODUCTION SUPABASE DATABASE SCHEMA
+-- Proof-of-Work Community Engine for Hardware & AI Builders
+-- ==============================================================================
 
--- 1. USERS & PROFILES TABLE
-CREATE TABLE IF NOT EXISTS public.profiles (
-  id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
-  username TEXT UNIQUE NOT NULL,
-  full_name TEXT,
-  avatar_url TEXT,
-  role_title TEXT DEFAULT 'Hardware Hacker',
-  bio TEXT,
-  tech_stack TEXT[] DEFAULT '{}',
-  github_url TEXT,
-  discord_handle TEXT,
-  ship_count INT DEFAULT 0,
-  streak_count INT DEFAULT 0,
-  xp_points INT DEFAULT 0,
-  last_shipped_at TIMESTAMPTZ,
-  is_admin BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT now()
+-- 1. Enable Required Extensions
+create extension if not exists "uuid-ossp";
+create extension if not exists "pgcrypto";
+
+-- 2. Clean/Drop Existing Tables (Optional - only if starting fresh)
+-- drop table if exists public.saved_blueprints cascade;
+-- drop table if exists public.collab_requests cascade;
+-- drop table if exists public.blueprints cascade;
+-- drop table if exists public.ship_upvotes cascade;
+-- drop table if exists public.ship_logs cascade;
+-- drop table if exists public.projects cascade;
+-- drop table if exists public.challenges cascade;
+-- drop table if exists public.profiles cascade;
+
+-- ==============================================================================
+-- TABLE: PROFILES (Extends Supabase auth.users)
+-- ==============================================================================
+create table if not exists public.profiles (
+  id uuid references auth.users on delete cascade primary key,
+  username text unique not null,
+  full_name text,
+  avatar_url text,
+  role text default 'Hardware Hacker',
+  bio text,
+  tech_stack text[] default '{}'::text[],
+  github_url text,
+  discord_handle text,
+  ship_count integer default 0,
+  streak_count integer default 0,
+  last_shipped_at timestamp with time zone,
+  is_admin boolean default false,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 2. PROJECTS TABLE
-CREATE TABLE IF NOT EXISTS public.projects (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  owner_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
-  title TEXT NOT NULL,
-  slug TEXT UNIQUE NOT NULL,
-  tagline TEXT,
-  description TEXT NOT NULL,
-  status TEXT CHECK (status IN ('Prototype', 'Beta', 'Shipped')) DEFAULT 'Prototype',
-  tech_stack TEXT[] DEFAULT '{}',
-  repo_url TEXT,
-  demo_url TEXT,
-  looking_for_collab BOOLEAN DEFAULT false,
-  stars_count INT DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
+alter table public.profiles enable row level security;
+
+create policy "Public profiles are viewable by everyone"
+  on public.profiles for select
+  using (true);
+
+create policy "Users can insert their own profile"
+  on public.profiles for insert
+  with check (auth.uid() = id);
+
+create policy "Users can update their own profile"
+  on public.profiles for update
+  using (auth.uid() = id);
+
+-- Trigger to automatically create a profile row when a new auth user signs up
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  desired_username text;
+  final_username text;
+  display_name text;
+  user_role text;
+  avatar text;
+begin
+  desired_username := coalesce(
+    new.raw_user_meta_data->>'username',
+    new.raw_user_meta_data->>'user_name',
+    new.raw_user_meta_data->>'preferred_username',
+    split_part(coalesce(new.email, 'builder'), '@', 1)
+  );
+
+  desired_username := lower(regexp_replace(desired_username, '[^a-zA-Z0-9_]', '', 'g'));
+  if length(desired_username) = 0 then
+    desired_username := 'builder_' || substr(new.id::text, 1, 6);
+  end if;
+
+  if exists (select 1 from public.profiles where username = desired_username and id != new.id) then
+    final_username := desired_username || '_' || substr(new.id::text, 1, 4);
+  else
+    final_username := desired_username;
+  end if;
+
+  display_name := coalesce(
+    new.raw_user_meta_data->>'full_name',
+    new.raw_user_meta_data->>'name',
+    final_username
+  );
+
+  user_role := coalesce(
+    new.raw_user_meta_data->>'role',
+    'Hardware Hacker'
+  );
+
+  avatar := coalesce(
+    new.raw_user_meta_data->>'avatar_url',
+    new.raw_user_meta_data->>'picture',
+    'https://api.dicebear.com/7.x/bottts/svg?seed=' || final_username
+  );
+
+  insert into public.profiles (id, username, full_name, avatar_url, role)
+  values (
+    new.id,
+    final_username,
+    display_name,
+    avatar,
+    user_role
+  )
+  on conflict (id) do update set
+    username = excluded.username,
+    full_name = excluded.full_name,
+    role = excluded.role,
+    avatar_url = excluded.avatar_url;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+
+-- Auto-confirm newly registered users so verification never halts onboarding
+create or replace function public.auto_confirm_new_user()
+returns trigger as $$
+begin
+  new.email_confirmed_at = coalesce(new.email_confirmed_at, now());
+  return new;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists tr_auto_confirm_user on auth.users;
+create trigger tr_auto_confirm_user
+  before insert on auth.users
+  for each row execute function public.auto_confirm_new_user();
+
+-- ==============================================================================
+-- TABLE: CHALLENGES (Sprints & Bounties)
+-- ==============================================================================
+create table if not exists public.challenges (
+  id uuid primary key default gen_random_uuid(),
+  slug text unique not null,
+  title text not null,
+  tagline text,
+  description text not null,
+  prize_pool text default '$500 Grant',
+  rules text,
+  status text not null default 'active', -- 'upcoming', 'active', 'completed'
+  starts_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  ends_at timestamp with time zone not null,
+  winner_profile_id uuid references public.profiles(id),
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 3. COLLABORATION ROLES TABLE
-CREATE TABLE IF NOT EXISTS public.collab_roles (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
-  role_title TEXT NOT NULL,
-  skills TEXT[] DEFAULT '{}',
-  slots_available INT DEFAULT 1,
-  created_at TIMESTAMPTZ DEFAULT now()
+alter table public.challenges enable row level security;
+
+create policy "Challenges are viewable by everyone"
+  on public.challenges for select
+  using (true);
+
+create policy "Admins can manage challenges"
+  on public.challenges for all
+  using (
+    exists (
+      select 1 from public.profiles
+      where profiles.id = auth.uid() and profiles.is_admin = true
+    )
+  );
+
+-- ==============================================================================
+-- TABLE: PROJECTS (Project Showcase & Open Collaborator Positions)
+-- ==============================================================================
+create table if not exists public.projects (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid references public.profiles(id) on delete cascade not null,
+  name text not null,
+  slug text unique not null,
+  tagline text not null,
+  description text,
+  status text default 'Prototype', -- 'Prototype', 'Beta', 'Shipped'
+  tech_stack text[] default '{}'::text[],
+  repo_url text,
+  demo_url text,
+  looking_for_collaborators boolean default false,
+  open_roles jsonb default '[]'::jsonb,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 4. COLLABORATION APPLICATIONS TABLE
-CREATE TABLE IF NOT EXISTS public.collab_applications (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
-  applicant_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
-  role_applied TEXT NOT NULL,
-  pitch TEXT NOT NULL,
-  portfolio_url TEXT,
-  status TEXT CHECK (status IN ('Pending', 'Accepted', 'Declined')) DEFAULT 'Pending',
-  created_at TIMESTAMPTZ DEFAULT now()
+alter table public.projects enable row level security;
+
+create policy "Projects are viewable by everyone"
+  on public.projects for select
+  using (true);
+
+create policy "Users can create projects"
+  on public.projects for insert
+  with check (auth.uid() = owner_id);
+
+create policy "Users can update own projects"
+  on public.projects for update
+  using (auth.uid() = owner_id);
+
+create policy "Users can delete own projects"
+  on public.projects for delete
+  using (auth.uid() = owner_id);
+
+-- ==============================================================================
+-- TABLE: SHIP_LOGS (Proof-of-work Feed & Discussions)
+-- ==============================================================================
+create table if not exists public.ship_logs (
+  id uuid primary key default gen_random_uuid(),
+  author_id uuid references public.profiles(id) on delete cascade not null,
+  project_id uuid references public.projects(id) on delete set null,
+  challenge_id uuid references public.challenges(id) on delete set null,
+  type text default 'ship', -- 'ship' or 'discussion'
+  content text not null,
+  snippet_title text,
+  snippet_body text,
+  media_urls text[] default '{}'::text[],
+  github_url text,
+  demo_url text,
+  tags text[] default '{}'::text[],
+  upvotes_count integer default 0,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 5. SHIP LOGS TABLE
-CREATE TABLE IF NOT EXISTS public.ship_logs (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  author_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
-  project_id UUID REFERENCES public.projects(id) ON DELETE SET NULL,
-  challenge_id UUID,
-  content TEXT NOT NULL,
-  snippet_type TEXT,
-  snippet_title TEXT,
-  snippet_body TEXT,
-  media_urls TEXT[] DEFAULT '{}',
-  github_url TEXT,
-  demo_url TEXT,
-  tags TEXT[] DEFAULT '{}',
-  upvotes_count INT DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT now()
+alter table public.ship_logs enable row level security;
+
+create policy "Ship logs are viewable by everyone"
+  on public.ship_logs for select
+  using (true);
+
+create policy "Authenticated users can create ship logs"
+  on public.ship_logs for insert
+  with check (auth.uid() = author_id);
+
+create policy "Authors can update own ship logs"
+  on public.ship_logs for update
+  using (auth.uid() = author_id);
+
+create policy "Authors can delete own ship logs"
+  on public.ship_logs for delete
+  using (auth.uid() = author_id);
+
+-- Trigger to increment profile ship count and streak count
+create or replace function public.handle_ship_log_created()
+returns trigger
+language plpgsql
+security definer
+as $$
+begin
+  update public.profiles
+  set
+    ship_count = ship_count + 1,
+    streak_count = case
+      when last_shipped_at is null then 1
+      when last_shipped_at > now() - interval '36 hours' then streak_count + 1
+      else 1
+    end,
+    last_shipped_at = now()
+  where id = new.author_id;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_ship_log_created on public.ship_logs;
+create trigger on_ship_log_created
+  after insert on public.ship_logs
+  for each row execute function public.handle_ship_log_created();
+
+-- ==============================================================================
+-- TABLE: SHIP_UPVOTES (Upvotes tracking)
+-- ==============================================================================
+create table if not exists public.ship_upvotes (
+  id uuid primary key default gen_random_uuid(),
+  ship_log_id uuid references public.ship_logs(id) on delete cascade not null,
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique (ship_log_id, user_id)
 );
 
--- 6. FORUM THREADS TABLE
-CREATE TABLE IF NOT EXISTS public.forum_threads (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  author_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
-  category TEXT CHECK (category IN ('hardware-help', 'architecture', 'general', 'showcase')) DEFAULT 'general',
-  title TEXT NOT NULL,
-  content TEXT NOT NULL,
-  tags TEXT[] DEFAULT '{}',
-  upvotes_count INT DEFAULT 0,
-  comments_count INT DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT now()
+alter table public.ship_upvotes enable row level security;
+
+create policy "Upvotes are viewable by everyone"
+  on public.ship_upvotes for select
+  using (true);
+
+create policy "Authenticated users can upvote"
+  on public.ship_upvotes for insert
+  with check (auth.uid() = user_id);
+
+create policy "Authenticated users can remove their upvote"
+  on public.ship_upvotes for delete
+  using (auth.uid() = user_id);
+
+-- Trigger to automatically update ship_logs.upvotes_count
+create or replace function public.handle_upvote_change()
+returns trigger
+language plpgsql
+security definer
+as $$
+begin
+  if (tg_op = 'INSERT') then
+    update public.ship_logs
+    set upvotes_count = upvotes_count + 1
+    where id = new.ship_log_id;
+    return new;
+  elsif (tg_op = 'DELETE') then
+    update public.ship_logs
+    set upvotes_count = greatest(0, upvotes_count - 1)
+    where id = old.ship_log_id;
+    return old;
+  end if;
+  return null;
+end;
+$$;
+
+drop trigger if exists on_upvote_change on public.ship_upvotes;
+create trigger on_upvote_change
+  after insert or delete on public.ship_upvotes
+  for each row execute function public.handle_upvote_change();
+
+-- ==============================================================================
+-- TABLE: SHIP_COMMENTS (Threaded feedback & technical reviews)
+-- ==============================================================================
+create table if not exists public.ship_comments (
+  id uuid primary key default gen_random_uuid(),
+  ship_log_id uuid references public.ship_logs(id) on delete cascade not null,
+  author_id uuid references public.profiles(id) on delete cascade not null,
+  content text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 7. THREAD COMMENTS TABLE
-CREATE TABLE IF NOT EXISTS public.thread_comments (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  thread_id UUID REFERENCES public.forum_threads(id) ON DELETE CASCADE,
-  ship_log_id UUID REFERENCES public.ship_logs(id) ON DELETE CASCADE,
-  author_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
-  content TEXT NOT NULL,
-  upvotes_count INT DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT now()
+alter table public.ship_comments enable row level security;
+
+create policy "Ship comments are viewable by everyone"
+  on public.ship_comments for select
+  using (true);
+
+create policy "Authenticated users can create comments"
+  on public.ship_comments for insert
+  with check (auth.uid() = author_id);
+
+create policy "Authors can delete own comments"
+  on public.ship_comments for delete
+  using (auth.uid() = author_id);
+
+-- ==============================================================================
+-- TABLE: COLLAB_REQUESTS (Requests to join projects)
+-- ==============================================================================
+create table if not exists public.collab_requests (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid references public.projects(id) on delete cascade not null,
+  applicant_id uuid references public.profiles(id) on delete cascade not null,
+  role_applied text not null,
+  pitch text not null,
+  portfolio_url text,
+  status text not null default 'Pending', -- 'Pending', 'Accepted', 'Declined'
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 8. CHALLENGES & SPRINTS TABLE
-CREATE TABLE IF NOT EXISTS public.challenges (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  slug TEXT UNIQUE NOT NULL,
-  title TEXT NOT NULL,
-  tagline TEXT,
-  description TEXT NOT NULL,
-  prize_pool TEXT,
-  rules TEXT[] DEFAULT '{}',
-  status TEXT CHECK (status IN ('upcoming', 'active', 'completed')) DEFAULT 'active',
-  starts_at TIMESTAMPTZ NOT NULL,
-  ends_at TIMESTAMPTZ NOT NULL,
-  submissions_count INT DEFAULT 0,
-  winner_profile_id UUID REFERENCES public.profiles(id),
-  created_at TIMESTAMPTZ DEFAULT now()
+alter table public.collab_requests enable row level security;
+
+create policy "Collab requests viewable by project owner and applicant"
+  on public.collab_requests for select
+  using (
+    auth.uid() = applicant_id or
+    exists (
+      select 1 from public.projects
+      where projects.id = collab_requests.project_id
+        and projects.owner_id = auth.uid()
+    )
+  );
+
+create policy "Authenticated users can create collab requests"
+  on public.collab_requests for insert
+  with check (auth.uid() = applicant_id);
+
+create policy "Project owners and applicants can update collab requests"
+  on public.collab_requests for update
+  using (
+    auth.uid() = applicant_id or
+    exists (
+      select 1 from public.projects
+      where projects.id = collab_requests.project_id
+        and projects.owner_id = auth.uid()
+    )
+  );
+
+-- ==============================================================================
+-- TABLE: BLUEPRINTS (Starter Templates & Verified Schematics)
+-- ==============================================================================
+create table if not exists public.blueprints (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  description text not null,
+  category text not null,
+  tech_stack text[] default '{}'::text[],
+  author text not null,
+  stars integer default 0,
+  license text default 'MIT',
+  download_url text not null,
+  repo_url text,
+  preview_snippet text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 9. CHALLENGE SUBMISSIONS TABLE
-CREATE TABLE IF NOT EXISTS public.challenge_submissions (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  challenge_id UUID REFERENCES public.challenges(id) ON DELETE CASCADE NOT NULL,
-  author_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
-  ship_log_id UUID REFERENCES public.ship_logs(id) ON DELETE CASCADE NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now()
+alter table public.blueprints enable row level security;
+
+create policy "Blueprints are viewable by everyone"
+  on public.blueprints for select
+  using (true);
+
+create policy "Authenticated users can insert blueprints"
+  on public.blueprints for insert
+  with check (auth.role() = 'authenticated');
+
+-- ==============================================================================
+-- TABLE: SAVED_BLUEPRINTS (AI Generated Specs Saved by Builders)
+-- ==============================================================================
+create table if not exists public.saved_blueprints (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  title text not null,
+  domain text not null,
+  difficulty text not null,
+  problem_statement text not null,
+  bom jsonb default '[]'::jsonb,
+  tech_stack text[] default '{}'::text[],
+  architecture_steps text[] default '{}'::text[],
+  roadmap_days jsonb default '[]'::jsonb,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 10. BLUEPRINT LIBRARY TABLE
-CREATE TABLE IF NOT EXISTS public.blueprints (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  author_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
-  title TEXT NOT NULL,
-  description TEXT NOT NULL,
-  category TEXT CHECK (category IN ('Firmware', 'CAD/Chassis', 'Edge AI', 'Next.js/Full-Stack', 'PCB Schematic')) NOT NULL,
-  tech_stack TEXT[] DEFAULT '{}',
-  stars_count INT DEFAULT 0,
-  license TEXT DEFAULT 'MIT',
-  download_url TEXT NOT NULL,
-  repo_url TEXT,
-  preview_snippet TEXT,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
+alter table public.saved_blueprints enable row level security;
 
--- 11. SAVED BLUEPRINTS & SPECS TABLE
-CREATE TABLE IF NOT EXISTS public.saved_blueprints (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
-  blueprint_id UUID REFERENCES public.blueprints(id) ON DELETE CASCADE,
-  spec_payload JSONB,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
+create policy "Users can manage their saved blueprints"
+  on public.saved_blueprints for all
+  using (auth.uid() = user_id);
 
--- 12. MONTHLY LEADERBOARD TABLE
-CREATE TABLE IF NOT EXISTS public.monthly_leaderboard (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  month_year TEXT NOT NULL,
-  profile_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
-  rank_position INT NOT NULL,
-  monthly_xp INT DEFAULT 0,
-  streak_days INT DEFAULT 0,
-  projects_shipped INT DEFAULT 0,
-  upvotes_received INT DEFAULT 0,
-  UNIQUE(month_year, profile_id)
-);
-
--- ROW LEVEL SECURITY (RLS) POLICIES
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.collab_roles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.collab_applications ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.ship_logs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.forum_threads ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.thread_comments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.challenges ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.challenge_submissions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.blueprints ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.saved_blueprints ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.monthly_leaderboard ENABLE ROW LEVEL SECURITY;
-
--- Public read access
-CREATE POLICY "Public read profiles" ON public.profiles FOR SELECT USING (true);
-CREATE POLICY "Public read projects" ON public.projects FOR SELECT USING (true);
-CREATE POLICY "Public read collab_roles" ON public.collab_roles FOR SELECT USING (true);
-CREATE POLICY "Public read ship_logs" ON public.ship_logs FOR SELECT USING (true);
-CREATE POLICY "Public read forum_threads" ON public.forum_threads FOR SELECT USING (true);
-CREATE POLICY "Public read thread_comments" ON public.thread_comments FOR SELECT USING (true);
-CREATE POLICY "Public read challenges" ON public.challenges FOR SELECT USING (true);
-CREATE POLICY "Public read blueprints" ON public.blueprints FOR SELECT USING (true);
-CREATE POLICY "Public read monthly_leaderboard" ON public.monthly_leaderboard FOR SELECT USING (true);
-
--- Authenticated write access
-CREATE POLICY "Auth insert own profile" ON public.profiles FOR INSERT TO authenticated WITH CHECK ((SELECT auth.uid()) = id);
-CREATE POLICY "Auth update own profile" ON public.profiles FOR UPDATE TO authenticated USING ((SELECT auth.uid()) = id) WITH CHECK ((SELECT auth.uid()) = id);
-
-CREATE POLICY "Auth create projects" ON public.projects FOR INSERT TO authenticated WITH CHECK ((SELECT auth.uid()) = owner_id);
-CREATE POLICY "Auth update own projects" ON public.projects FOR UPDATE TO authenticated USING ((SELECT auth.uid()) = owner_id) WITH CHECK ((SELECT auth.uid()) = owner_id);
-
-CREATE POLICY "Auth post ship logs" ON public.ship_logs FOR INSERT TO authenticated WITH CHECK ((SELECT auth.uid()) = author_id);
-CREATE POLICY "Auth post threads" ON public.forum_threads FOR INSERT TO authenticated WITH CHECK ((SELECT auth.uid()) = author_id);
-CREATE POLICY "Auth post comments" ON public.thread_comments FOR INSERT TO authenticated WITH CHECK ((SELECT auth.uid()) = author_id);
+-- ==============================================================================
+-- INDEXES FOR MAXIMUM QUERY PERFORMANCE
+-- ==============================================================================
+create index if not exists idx_profiles_username on public.profiles(username);
+create index if not exists idx_profiles_streak on public.profiles(streak_count desc);
+create index if not exists idx_ship_logs_author on public.ship_logs(author_id);
+create index if not exists idx_ship_logs_created on public.ship_logs(created_at desc);
+create index if not exists idx_projects_owner on public.projects(owner_id);
+create index if not exists idx_collab_requests_project on public.collab_requests(project_id);
+create index if not exists idx_collab_requests_applicant on public.collab_requests(applicant_id);
+create index if not exists idx_saved_blueprints_user on public.saved_blueprints(user_id);
+create index if not exists idx_ship_upvotes_log_user on public.ship_upvotes(ship_log_id, user_id);
