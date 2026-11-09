@@ -49,4 +49,3 @@ Run the SQL migration script located in `/supabase/schema.sql` inside your Supab
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to access the workspace.
