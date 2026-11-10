@@ -45,14 +45,14 @@ export interface ShipPost {
   upvotes: number;
   hasUpvoted?: boolean;
   comments: Comment[];
-  category?: string; // for discussions, e.g. "hardware-help" | "architecture" | "general"
+  category?: string;
 }
 
-export interface CollabRole {
+export type CollabRole = {
   role: string;
   skills: string[];
   slotsAvailable: number;
-}
+};
 
 export interface ProjectItem {
   id: string;
@@ -91,6 +91,31 @@ export interface CollabApplication {
   timestamp: string;
 }
 
+export type ContestApplicationStatus =
+  | "pending"
+  | "approved"
+  | "waitlisted"
+  | "rejected"
+  | "withdrawn";
+
+export interface ContestApplicationItem {
+  id: string;
+  contestId: string;
+  contestTitle?: string;
+  contestSlug?: string;
+  applicantId: string;
+  teamName?: string;
+  projectTitle: string;
+  track?: string;
+  pitch: string;
+  repoUrl?: string;
+  portfolioUrl?: string;
+  status: ContestApplicationStatus;
+  acceptedRules: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ChallengeItem {
   id: string;
   slug: string;
@@ -102,9 +127,52 @@ export interface ChallengeItem {
   status: "active" | "upcoming" | "completed";
   startsAt: string;
   endsAt: string;
+  applicationDeadline?: string;
   submissionsCount: number;
+  applicationsCount?: number;
+  approvedCount?: number;
   maxSlots?: number;
+  requireApprovalToSubmit?: boolean;
+  isPublished?: boolean;
   sponsoredBy?: string;
+  myApplication?: ContestApplicationItem | null;
+}
+
+export interface AdminContestApplicationRow {
+  id: string;
+  contestId: string;
+  contestTitle: string;
+  contestStatus: "upcoming" | "active" | "completed";
+  contestMaxSlots: number | null;
+  contestApprovedCount: number;
+  applicantId: string;
+  applicantName: string;
+  applicantUsername: string;
+  applicantAvatar: string;
+  applicantRole: string;
+  applicantShipCount: number;
+  applicantGithubUrl: string | null;
+  teamName: string | null;
+  projectTitle: string;
+  track: string | null;
+  pitch: string;
+  repoUrl: string | null;
+  portfolioUrl: string | null;
+  status: ContestApplicationStatus;
+  adminNotes: string;
+  reviewedAt: string | null;
+  createdAt: string;
+}
+
+export interface AdminAuditLogItem {
+  id: string;
+  actorId: string | null;
+  actorUsername: string;
+  action: string;
+  targetType: string;
+  targetId: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
 }
 
 export interface BlueprintItem {

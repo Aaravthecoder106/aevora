@@ -44,7 +44,11 @@ function ChallengeDetailContent() {
           .eq("slug", slug)
           .single();
 
-        if (!dbChallenge || DUMMY_SEED_CHALLENGE_IDS.includes((dbChallenge as any).id)) {
+        if (
+          !dbChallenge ||
+          DUMMY_SEED_CHALLENGE_IDS.includes((dbChallenge as any).id) ||
+          (dbChallenge as any).is_published === false
+        ) {
           setChallenge(null);
           setSubmissions([]);
           return;

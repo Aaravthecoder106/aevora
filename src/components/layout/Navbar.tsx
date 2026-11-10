@@ -10,13 +10,14 @@ import {
   Sun,
   Moon,
   Bell,
+  ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
 import { useTheme } from "../theme/ThemeProvider";
 import { AuthModal } from "../auth/AuthModal";
 
 export function Navbar() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, isAdmin, signOut } = useAuth();
   const { theme, setTheme, toggleTheme } = useTheme();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -154,6 +155,16 @@ export function Navbar() {
               <Bell className="w-4 h-4" />
             </button>
 
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-blue-50 dark:bg-[#292a2f] text-blue-600 dark:text-[#adc6ff] border border-blue-200 dark:border-blue-500/30 text-xs font-mono font-semibold hover:bg-blue-100 dark:hover:bg-[#34363d] transition-colors"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Admin</span>
+              </Link>
+            )}
+
             {/* User Profile Dropdown */}
             <div className="relative">
               <button
@@ -190,6 +201,16 @@ export function Navbar() {
                       {profile?.role || "Hardware Hacker"}
                     </span>
                   </div>
+
+                  {isAdmin && (
+                    <Link
+                      href="/admin"
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-blue-600 dark:text-[#adc6ff] hover:bg-blue-50 dark:hover:bg-[#292a2f] transition-colors text-xs font-mono font-semibold mb-1"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span>Admin Console</span>
+                    </Link>
+                  )}
 
                   <button
                     onClick={async () => {

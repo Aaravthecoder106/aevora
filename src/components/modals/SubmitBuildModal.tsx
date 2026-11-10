@@ -118,7 +118,8 @@ export function SubmitBuildModal({
             >
               {challenges.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.title} ({c.prizePool}) - {c.status.toUpperCase()}
+                  {c.title}
+                  {c.prizePool ? ` (${c.prizePool})` : ""} - {c.status.toUpperCase()}
                 </option>
               ))}
             </select>

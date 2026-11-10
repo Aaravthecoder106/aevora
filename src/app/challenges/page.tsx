@@ -22,7 +22,8 @@ export default function ChallengesPage() {
 
         if (data && data.length > 0) {
           const realChallenges = (data as any[]).filter(
-            (c) => !DUMMY_SEED_CHALLENGE_IDS.includes(c.id)
+            (c) =>
+              !DUMMY_SEED_CHALLENGE_IDS.includes(c.id) && c.is_published !== false
           );
           setChallenges(realChallenges);
         }

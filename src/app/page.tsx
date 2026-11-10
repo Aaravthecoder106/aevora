@@ -21,6 +21,7 @@ import {
   ArrowRight,
   TrendingUp,
   RefreshCw,
+  Send,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -34,6 +35,7 @@ import {
   Comment,
   ProjectItem,
   ChallengeItem,
+  ContestApplicationItem,
   BlueprintItem,
   ResourceTool,
   AISpec,
@@ -56,6 +58,7 @@ import { RulesModal } from "@/components/modals/RulesModal";
 import { CollabModal } from "@/components/modals/CollabModal";
 import { ListProjectModal } from "@/components/modals/ListProjectModal";
 import { SubmitBuildModal } from "@/components/modals/SubmitBuildModal";
+import { ApplyContestModal } from "@/components/modals/ApplyContestModal";
 import { formatCountdown } from "@/lib/utils";
 import { DUMMY_SEED_CHALLENGE_IDS } from "@/lib/data/initialData";
 
@@ -70,6 +73,7 @@ export default function AevoraCommunityPage() {
   const [posts, setPosts] = useState<ShipPost[]>([]);
   const [projects, setProjects] = useState<ProjectItem[]>([]);
   const [challenges, setChallenges] = useState<ChallengeItem[]>([]);
+  const [contestApplications, setContestApplications] = useState<ContestApplicationItem[]>([]);
   const [blueprints, setBlueprints] = useState<BlueprintItem[]>([]);
   const [resources, setResources] = useState<ResourceTool[]>([]);
   const [savedSpecs, setSavedSpecs] = useState<AISpec[]>([]);
@@ -85,8 +89,10 @@ export default function AevoraCommunityPage() {
   const [isRulesOpen, setIsRulesOpen] = useState(false);
   const [isListProjectOpen, setIsListProjectOpen] = useState(false);
   const [isSubmitBuildOpen, setIsSubmitBuildOpen] = useState(false);
+  const [isApplyContestOpen, setIsApplyContestOpen] = useState(false);
   const [isCollabOpen, setIsCollabOpen] = useState(false);
   const [selectedCollabProject, setSelectedCollabProject] = useState<ProjectItem | null>(null);
+  const [selectedApplyContest, setSelectedApplyContest] = useState<ChallengeItem | null>(null);
   const [selectedChallengeId, setSelectedChallengeId] = useState<string>("");
 
   // Countdown timer string (safe for SSR)
@@ -283,7 +289,44 @@ export default function AevoraCommunityPage() {
         setProjects(mappedProjects);
       }
 
-      // 3. Fetch Challenges (excluding legacy dummy seeds)
+      // 3. Fetch Contests / Challenges (published only, excluding legacy dummy seeds)
+      // Also fetch current user's contest applications gracefully
+      let myAppMap: Record<string, ContestApplicationItem> = {};
+      try {
+        const { data: myAppsData, error: myAppsErr } = await (
+          supabase.from("contest_applications") as any
+        )
+          .select("*, contest:challenges(title, slug)")
+          .eq("applicant_id", user.id)
+          .order("created_at", { ascending: false });
+
+        if (!myAppsErr && Array.isArray(myAppsData)) {
+          const mappedApps: ContestApplicationItem[] = myAppsData.map((a: any) => ({
+            id: a.id,
+            contestId: a.contest_id,
+            contestTitle: a.contest?.title || undefined,
+            contestSlug: a.contest?.slug || undefined,
+            applicantId: a.applicant_id,
+            teamName: a.team_name || undefined,
+            projectTitle: a.project_title,
+            track: a.track || undefined,
+            pitch: a.pitch,
+            repoUrl: a.repo_url || undefined,
+            portfolioUrl: a.portfolio_url || undefined,
+            status: a.status,
+            acceptedRules: Boolean(a.accepted_rules),
+            createdAt: a.created_at,
+            updatedAt: a.updated_at,
+          }));
+          setContestApplications(mappedApps);
+          mappedApps.forEach((app) => {
+            myAppMap[app.contestId] = app;
+          });
+        }
+      } catch {
+        // Ignore gracefully if migration has not run yet
+      }
+
       const { data: challengesData } = await supabase
         .from("challenges")
         .select("*")
@@ -291,7 +334,8 @@ export default function AevoraCommunityPage() {
 
       if (challengesData) {
         const realChallenges = challengesData.filter(
-          (c: any) => !DUMMY_SEED_CHALLENGE_IDS.includes(c.id)
+          (c: any) =>
+            !DUMMY_SEED_CHALLENGE_IDS.includes(c.id) && c.is_published !== false
         );
         const mappedChallenges: ChallengeItem[] = realChallenges.map((c: any) => ({
           id: c.id,
@@ -304,11 +348,17 @@ export default function AevoraCommunityPage() {
           status: c.status || "active",
           startsAt: c.starts_at,
           endsAt: c.ends_at,
+          applicationDeadline: c.application_deadline || undefined,
           submissionsCount: logsData
             ? logsData.filter((l: any) => l.challenge_id === c.id).length
             : 0,
-          maxSlots: 50,
+          applicationsCount: c.applications_count ?? 0,
+          approvedCount: c.approved_count ?? 0,
+          maxSlots: c.max_slots ?? undefined,
+          requireApprovalToSubmit: c.require_approval_to_submit ?? true,
+          isPublished: c.is_published ?? true,
           sponsoredBy: c.sponsored_by || "",
+          myApplication: myAppMap[c.id] || null,
         }));
         setChallenges(mappedChallenges);
       }
@@ -625,6 +675,22 @@ export default function AevoraCommunityPage() {
     }
   };
 
+  const handleWithdrawContestApp = async (contestId: string) => {
+    if (!user) return;
+    try {
+      const res = await fetch(`/api/contests/${contestId}/apply`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "withdraw" }),
+      });
+      if (res.ok) {
+        await fetchAllData();
+      }
+    } catch (e) {
+      console.error("Error withdrawing contest application:", e);
+    }
+  };
+
   const handleSubmitBuildLog = async (post: ShipPost, challengeId: string) => {
     if (!user) return;
 
@@ -757,9 +823,12 @@ export default function AevoraCommunityPage() {
     },
     {
       id: "challenges" as ViewMode,
-      label: "Sprints & Challenges",
+      label: "Contests & Sprints",
       icon: Zap,
-      badge: `${challenges.filter((c) => c.status === "active").length} Active`,
+      badge: `${
+        challenges.filter((c) => c.status === "active" || c.status === "upcoming")
+          .length
+      } Open`,
     },
     {
       id: "blueprints" as ViewMode,
@@ -797,7 +866,10 @@ export default function AevoraCommunityPage() {
     "#rust",
   ];
 
-  const activeSprint = challenges.find((c) => c.status === "active") || challenges[0];
+  const activeSprint =
+    challenges.find((c) => c.status === "active") ||
+    challenges.find((c) => c.status === "upcoming") ||
+    challenges[0];
 
   return (
     <div className="min-h-screen bg-[#f1f5f9] dark:bg-[#121318] text-slate-900 dark:text-[#e3e1e9] transition-colors duration-200">
@@ -1012,10 +1084,16 @@ export default function AevoraCommunityPage() {
                   />
                 )}
 
-                {/* 3. SPRINTS & CHALLENGES VIEW */}
+                {/* 3. CONTESTS & SPRINTS VIEW */}
                 {activeView === "challenges" && (
                   <ChallengesView
                     challenges={challenges}
+                    myApplications={contestApplications}
+                    onApplyContest={(ch) => {
+                      setSelectedApplyContest(ch);
+                      setIsApplyContestOpen(true);
+                    }}
+                    onWithdrawApplication={handleWithdrawContestApp}
                     onSubmitBuild={(ch) => {
                       setSelectedChallengeId(ch.id);
                       setIsSubmitBuildOpen(true);
@@ -1050,8 +1128,10 @@ export default function AevoraCommunityPage() {
                     )}
                     userShipDates={userShipDates}
                     collabApplications={collabApplications}
+                    contestApplications={contestApplications}
                     onOpenListProject={() => setIsListProjectOpen(true)}
                     onUpdateAppStatus={handleUpdateAppStatus}
+                    onWithdrawContestApp={handleWithdrawContestApp}
                     onRemoveSavedSpec={handleRemoveSavedSpec}
                   />
                 )}
@@ -1060,16 +1140,20 @@ export default function AevoraCommunityPage() {
           </main>
 
           {/* ======================================================== */}
-          {/* RIGHT RAIL: ACTIVE SPRINT, ACTIONS & FORGE TELEMETRY     */}
+          {/* RIGHT RAIL: ACTIVE CONTEST, ACTIONS & FORGE TELEMETRY    */}
           {/* ======================================================== */}
           <aside className="xl:col-span-3 flex flex-col gap-3 xl:sticky xl:top-20">
-            {/* Active Sprint Widget */}
+            {/* Active Contest Widget */}
             {activeSprint ? (
               <div className="bg-white dark:bg-[#0d0e13] border border-slate-200 dark:border-[#1e1f25] p-4 rounded-lg shadow-xs space-y-4 transition-colors">
                 <div className="flex items-center justify-between">
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[11px] font-mono font-semibold bg-blue-50 dark:bg-[#292a2f] text-blue-600 dark:text-[#adc6ff] border border-blue-200/70 dark:border-transparent uppercase tracking-wider">
                     <Zap className="w-3.5 h-3.5" />
-                    ACTIVE SPRINT
+                    {activeSprint.status === "upcoming"
+                      ? "OPEN REGISTRATION"
+                      : activeSprint.status === "completed"
+                      ? "CONTEST ENDED"
+                      : "ACTIVE CONTEST"}
                   </span>
                   <span className="text-[11px] font-mono text-slate-500 dark:text-[#8c909f] flex items-center gap-1 tabular-nums">
                     <Clock className="w-3.5 h-3.5" />
@@ -1099,55 +1183,88 @@ export default function AevoraCommunityPage() {
                   )}
                   <div className="flex justify-between items-center text-xs font-mono">
                     <span className="text-slate-500 dark:text-[#8c909f] text-[11px]">
+                      APPLICANTS:
+                    </span>
+                    <span className="font-semibold text-slate-900 dark:text-[#e3e1e9] text-[11px] tabular-nums">
+                      {activeSprint.approvedCount ?? 0} Approved
+                      {activeSprint.maxSlots ? ` / ${activeSprint.maxSlots}` : ""} (
+                      {activeSprint.applicationsCount ?? 0} total)
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs font-mono">
+                    <span className="text-slate-500 dark:text-[#8c909f] text-[11px]">
                       LOGGED SHIPS:
                     </span>
                     <span className="font-semibold text-slate-900 dark:text-[#e3e1e9] text-[11px] tabular-nums flex items-center gap-1.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-[#adc6ff]" />
-                      {posts.filter((p) => p.challengeTag).length} Verified
+                      {activeSprint.submissionsCount} Verified
                     </span>
                   </div>
-                  {/* Progress indicator */}
                   <div className="w-full h-1.5 bg-slate-200 dark:bg-[#292a2f] rounded-full overflow-hidden mt-1">
                     <div
                       className="h-full bg-blue-600 dark:bg-[#adc6ff] rounded-full transition-all duration-500"
                       style={{
                         width: `${Math.min(
                           100,
-                          posts.filter((p) => p.challengeTag).length * 10
+                          (activeSprint.applicationsCount ?? 0) * 10
                         )}%`,
                       }}
                     />
                   </div>
                 </div>
 
-                <button
-                  onClick={() => {
-                    setSelectedChallengeId(activeSprint.id);
-                    setIsSubmitBuildOpen(true);
-                  }}
-                  className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md transition-colors shadow-xs active:scale-[0.99]"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Submit Sprint Build</span>
-                </button>
+                {activeSprint.myApplication ? (
+                  <div className="space-y-2">
+                    <div className="px-3 py-2 rounded-md bg-blue-50 dark:bg-[#292a2f] border border-blue-200 dark:border-blue-500/30 text-[11px] font-mono text-blue-700 dark:text-[#adc6ff] flex items-center justify-between">
+                      <span>Application Status:</span>
+                      <strong className="uppercase">{activeSprint.myApplication.status}</strong>
+                    </div>
+
+                    {activeSprint.status === "active" &&
+                      (!(activeSprint.requireApprovalToSubmit ?? true) ||
+                        activeSprint.myApplication.status === "approved") && (
+                        <button
+                          onClick={() => {
+                            setSelectedChallengeId(activeSprint.id);
+                            setIsSubmitBuildOpen(true);
+                          }}
+                          className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-md transition-colors shadow-xs"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Submit Contest Build</span>
+                        </button>
+                      )}
+                  </div>
+                ) : activeSprint.status !== "completed" ? (
+                  <button
+                    onClick={() => {
+                      setSelectedApplyContest(activeSprint);
+                      setIsApplyContestOpen(true);
+                    }}
+                    className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md transition-colors shadow-xs active:scale-[0.99]"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Apply to Contest</span>
+                  </button>
+                ) : null}
               </div>
             ) : (
               <div className="bg-white dark:bg-[#0d0e13] border border-slate-200 dark:border-[#1e1f25] p-4 rounded-lg shadow-xs space-y-3 transition-colors">
                 <div className="flex items-center justify-between">
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[11px] font-mono font-semibold bg-slate-100 dark:bg-[#1a1b21] text-slate-600 dark:text-[#8c909f] border border-slate-200 dark:border-[#292a2f] uppercase tracking-wider">
                     <Zap className="w-3.5 h-3.5" />
-                    SPRINTS
+                    CONTESTS
                   </span>
                   <span className="text-[11px] font-mono text-slate-400 dark:text-[#8c909f]">
-                    0 Active
+                    0 Open
                   </span>
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-slate-900 dark:text-[#e3e1e9]">
-                    No Active Sprints
+                    No Active Contests
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-[#8c909f] mt-1 leading-relaxed">
-                    No active sprint challenges in the database yet. Log daily ships directly to the feed or list a project build.
+                    No published contests right now. Admins publish new contests from the protected Admin Console.
                   </p>
                 </div>
               </div>
@@ -1223,10 +1340,14 @@ export default function AevoraCommunityPage() {
                 </div>
                 <div className="p-2.5 rounded-md bg-slate-50 dark:bg-[#1a1b21] border border-slate-200 dark:border-[#292a2f]">
                   <div className="font-mono text-[10px] text-slate-500 dark:text-[#8c909f] uppercase">
-                    Active Sprints
+                    Open Contests
                   </div>
                   <div className="font-mono text-base font-bold text-slate-900 dark:text-[#e3e1e9] mt-0.5 tabular-nums">
-                    {challenges.filter((c) => c.status === "active").length}
+                    {
+                      challenges.filter(
+                        (c) => c.status === "active" || c.status === "upcoming"
+                      ).length
+                    }
                   </div>
                 </div>
                 <div className="p-2.5 rounded-md bg-slate-50 dark:bg-[#1a1b21] border border-slate-200 dark:border-[#292a2f]">
@@ -1266,10 +1387,25 @@ export default function AevoraCommunityPage() {
 
       <SubmitBuildModal
         isOpen={isSubmitBuildOpen}
-        challenges={challenges}
+        challenges={challenges.filter(
+          (c) =>
+            c.status === "active" &&
+            (!(c.requireApprovalToSubmit ?? true) ||
+              c.myApplication?.status === "approved")
+        )}
         preselectedChallengeId={selectedChallengeId}
         onClose={() => setIsSubmitBuildOpen(false)}
         onSubmitBuild={handleSubmitBuildLog}
+      />
+
+      <ApplyContestModal
+        isOpen={isApplyContestOpen}
+        contest={selectedApplyContest}
+        onClose={() => {
+          setIsApplyContestOpen(false);
+          setSelectedApplyContest(null);
+        }}
+        onApplied={fetchAllData}
       />
     </div>
   );

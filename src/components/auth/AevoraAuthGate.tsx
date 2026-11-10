@@ -86,9 +86,13 @@ export function AevoraAuthGate() {
   const handleGeneratePassword = () => {
     const chars =
       "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%&*";
+    const randomValues = new Uint32Array(16);
+    if (typeof window !== "undefined" && window.crypto?.getRandomValues) {
+      window.crypto.getRandomValues(randomValues);
+    }
     let generated = "";
     for (let i = 0; i < 16; i++) {
-      generated += chars.charAt(Math.floor(Math.random() * chars.length));
+      generated += chars.charAt(randomValues[i] % chars.length);
     }
     setPassword(generated);
     setShowPassword(true);

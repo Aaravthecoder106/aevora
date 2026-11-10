@@ -5,7 +5,9 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
   const origin = requestUrl.origin;
-  const next = requestUrl.searchParams.get("next") || "/";
+  const rawNext = requestUrl.searchParams.get("next") || "/";
+  // Prevent open-redirect attacks via protocol-relative URLs (e.g. //evil.com)
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/";
 
   if (code) {
     const supabase = await createClient();
@@ -15,6 +17,5 @@ export async function GET(request: Request) {
     }
   }
 
-  // URL to redirect to after sign-in process completes
   return NextResponse.redirect(`${origin}/?auth_error=could_not_authenticate`);
 }
