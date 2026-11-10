@@ -1,96 +1,125 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
-    --background: #09090b;
-    --foreground: #f4f4f5;
-    --card: #18181b;
-    --card-foreground: #f4f4f5;
-    --border: #27272a;
-    --ring: rgba(16, 185, 129, 0.4);
-    --font-mono: var(--font-geist-mono);
+    --background: #f1f5f9;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --border: #e2e8f0;
+    --ring: rgba(37, 99, 235, 0.3);
+    --font-mono: var(--font-jetbrains-mono);
     --font-sans: var(--font-geist-sans);
+  }
+
+  .dark {
+    --background: #121318;
+    --foreground: #e3e1e9;
+    --card: #0d0e13;
+    --card-foreground: #e3e1e9;
+    --border: #1e1f25;
+    --ring: rgba(77, 142, 255, 0.35);
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
   }
 
   body {
     background-color: var(--background);
     color: var(--foreground);
-    font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: var(--font-geist-sans), var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     overflow-x: hidden;
+    overscroll-behavior: none;
+    transition: background-color 200ms ease, color 200ms ease;
   }
 }
 
-/* Ultra-Dark Glassmorphism & Surface Utilities */
+/* Technical Engineering Grid Pattern (Light & Dark calibrated) */
+.tech-grid {
+  background-size: 32px 32px;
+  background-image:
+    linear-gradient(to right, rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+}
+
+.dark .tech-grid {
+  background-size: 32px 32px;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
+/* Dual-Mode Precision Surfaces & Glassmorphism */
+.glass-header {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dark .glass-header {
+  background: rgba(13, 14, 19, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid #1e1f25;
+}
+
 .glass-panel {
-  background: rgba(24, 24, 27, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(39, 39, 42, 0.8);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
+}
+
+.dark .glass-panel {
+  background: #0d0e13;
+  border: 1px solid #1e1f25;
   box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
 }
 
-.glass-panel-subtle {
-  background: rgba(18, 18, 21, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid #27272a;
+.terminal-window {
+  background: rgba(232, 238, 245, 0.7);
+  border: 1px solid rgba(203, 213, 225, 0.7);
+  font-family: var(--font-jetbrains-mono), monospace;
 }
 
-.glass-panel-glow {
-  background: rgba(24, 24, 27, 0.85);
-  border: 1px solid rgba(16, 185, 129, 0.35);
-  box-shadow: 0 0 25px -4px rgba(16, 185, 129, 0.15), 0 4px 12px rgba(0, 0, 0, 0.4);
+.dark .terminal-window {
+  background: #1a1b21;
+  border: 1px solid #292a2f;
 }
 
-.glass-header {
-  background: rgba(9, 9, 11, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid #27272a;
+/* Tabular Figures for Engineering Metrics */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
-.glass-pill {
-  background: rgba(24, 24, 27, 0.9);
-  border: 1px solid #27272a;
-  color: #a1a1aa;
-}
-
-.glass-pill:hover {
-  background: #27272a;
-  border-color: #3f3f46;
-  color: #f4f4f5;
-}
-
-/* Ultra-Dark Engineering Grid Pattern */
-.cyber-grid {
-  background-size: 32px 32px;
-  background-image: 
-    linear-gradient(to right, rgba(39, 39, 42, 0.25) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(39, 39, 42, 0.25) 1px, transparent 1px);
-}
-
-/* Clean Dark Scrollbars */
+/* Clean Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #09090b;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: #cbd5e1;
   border-radius: 3px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+.dark ::-webkit-scrollbar-thumb {
+  background: #292a2f;
 }
 
-/* Terminal & Code Block Utilities */
-.terminal-window {
-  background: #0c0c0e;
-  border: 1px solid #27272a;
-  font-family: var(--font-geist-mono), monospace;
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #424754;
 }

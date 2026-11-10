@@ -8,8 +8,6 @@ import {
   Bookmark,
   Check,
   Copy,
-  Layers,
-  Terminal,
   RefreshCw,
   AlertCircle,
 } from "lucide-react";
@@ -30,6 +28,7 @@ export function AIGeneratorView({ onSaveSpec, savedSpecIds }: AIGeneratorViewPro
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [generationStep, setGenerationStep] = useState<string>("");
   const [currentSpec, setCurrentSpec] = useState<AISpec | null>(null);
+  const [specSource, setSpecSource] = useState<string>("gemini-api");
   const [copied, setCopied] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -88,12 +87,13 @@ export function AIGeneratorView({ onSaveSpec, savedSpecIds }: AIGeneratorViewPro
 
       const data = await res.json();
       if (data.success && data.spec) {
-        setGenerationStep("Compiling 7-day milestone execution roadmap...");
+        setGenerationStep("Compiling milestone execution roadmap...");
         setTimeout(() => {
           setCurrentSpec(data.spec);
+          setSpecSource(data.source || "synthesis");
           setIsGenerating(false);
           setGenerationStep("");
-        }, 400);
+        }, 350);
       } else {
         throw new Error(data.error || "Failed to generate spec");
       }
@@ -127,32 +127,39 @@ ${currentSpec.roadmapDays.map((r) => `### ${r.day}: ${r.task}\nDeliverable: ${r.
 
   const isCurrentSaved = currentSpec ? savedSpecIds.includes(currentSpec.id) : false;
 
+  const estimatedTotal = currentSpec
+    ? currentSpec.bom.reduce((sum, item) => {
+        const numeric = parseFloat((item.estimatedCost || "").replace(/[^0-9.]/g, ""));
+        return sum + (isNaN(numeric) ? 0 : numeric);
+      }, 0)
+    : 0;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header Banner */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 shadow-xl">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-emerald-950/40 text-emerald-400 border border-emerald-500/30">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-            AI Idea & Spec Generator
+      <div className="bg-white dark:bg-[#0d0e13] border border-slate-200 dark:border-[#1e1f25] rounded-lg p-5 shadow-xs transition-colors">
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[11px] font-mono font-medium bg-blue-50 dark:bg-[#292a2f] text-blue-600 dark:text-[#adc6ff] border border-blue-200/70 dark:border-transparent">
+            <Sparkles className="w-3.5 h-3.5" />
+            AI Idea &amp; Spec Generator
           </span>
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-950 text-zinc-400 border border-zinc-800">
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-[#1a1b21] text-slate-600 dark:text-[#c2c6d6] border border-slate-200 dark:border-[#292a2f]">
             Google Gemini Powered
           </span>
         </div>
-        <h2 className="text-xl font-bold text-zinc-100 tracking-tight">
-          AI Idea & Engineering Spec Generator
+        <h2 className="text-xl font-bold text-slate-900 dark:text-[#e3e1e9] tracking-tight">
+          AI Idea &amp; Engineering Spec Generator
         </h2>
-        <p className="text-xs text-zinc-400 font-mono mt-0.5">
+        <p className="text-xs text-slate-600 dark:text-[#8c909f] font-mono mt-1">
           Generate realistic, vetted system architecture specs, bill of materials (BOM), and a milestone execution roadmap based on your hardware stack and requirements.
         </p>
       </div>
 
       {/* Generator Controls Card */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-xl space-y-6">
+      <div className="bg-white dark:bg-[#0d0e13] border border-slate-200 dark:border-[#1e1f25] rounded-lg p-6 shadow-xs space-y-6 transition-colors">
         {/* Step 1: Domain */}
         <div>
-          <label className="block text-xs font-mono font-semibold uppercase tracking-wider text-zinc-400 mb-2">
+          <label className="block text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-500 dark:text-[#8c909f] mb-2">
             1. Select Target Domain
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
@@ -162,12 +169,12 @@ ${currentSpec.roadmapDays.map((r) => `### ${r.day}: ${r.task}\nDeliverable: ${r.
                 onClick={() => setDomain(d.id)}
                 className={`p-3 rounded-lg text-left border transition-all ${
                   domain === d.id
-                    ? "bg-zinc-800 text-zinc-100 border-zinc-700 shadow-xs"
-                    : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:border-zinc-700 hover:text-zinc-200"
+                    ? "bg-blue-50/80 dark:bg-[#292a2f] text-blue-700 dark:text-[#adc6ff] border-blue-300 dark:border-blue-500/40 shadow-xs"
+                    : "bg-slate-50 dark:bg-[#1a1b21] text-slate-700 dark:text-[#c2c6d6] border-slate-200 dark:border-[#292a2f] hover:border-slate-300 dark:hover:border-[#34343a]"
                 }`}
               >
                 <div className="text-xs font-bold leading-tight font-mono">{d.label}</div>
-                <div className="text-[11px] mt-1 line-clamp-2 text-zinc-500 font-sans">
+                <div className="text-[11px] mt-1 line-clamp-2 text-slate-500 dark:text-[#8c909f] font-sans">
                   {d.desc}
                 </div>
               </button>
@@ -177,8 +184,8 @@ ${currentSpec.roadmapDays.map((r) => `### ${r.day}: ${r.task}\nDeliverable: ${r.
 
         {/* Step 2: Difficulty */}
         <div>
-          <label className="block text-xs font-mono font-semibold uppercase tracking-wider text-zinc-400 mb-2">
-            2. Scope & Time Horizon
+          <label className="block text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-500 dark:text-[#8c909f] mb-2">
+            2. Scope &amp; Time Horizon
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             {difficulties.map((diff) => (
@@ -187,12 +194,14 @@ ${currentSpec.roadmapDays.map((r) => `### ${r.day}: ${r.task}\nDeliverable: ${r.
                 onClick={() => setDifficulty(diff.id)}
                 className={`p-3 rounded-lg text-left border transition-all ${
                   difficulty === diff.id
-                    ? "bg-emerald-950/40 text-emerald-300 border-emerald-500/50 font-semibold"
-                    : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:border-zinc-700 hover:text-zinc-200"
+                    ? "bg-blue-50/80 dark:bg-[#292a2f] text-blue-700 dark:text-[#adc6ff] border-blue-300 dark:border-blue-500/40 font-semibold"
+                    : "bg-slate-50 dark:bg-[#1a1b21] text-slate-700 dark:text-[#c2c6d6] border-slate-200 dark:border-[#292a2f] hover:border-slate-300 dark:hover:border-[#34343a]"
                 }`}
               >
                 <div className="text-xs font-bold font-mono">{diff.label}</div>
-                <div className="text-[11px] font-mono text-emerald-400 mt-0.5">{diff.time}</div>
+                <div className="text-[11px] font-mono text-blue-600 dark:text-[#adc6ff] mt-0.5">
+                  {diff.time}
+                </div>
               </button>
             ))}
           </div>
@@ -200,8 +209,8 @@ ${currentSpec.roadmapDays.map((r) => `### ${r.day}: ${r.task}\nDeliverable: ${r.
 
         {/* Step 3: Hardware Multi-select */}
         <div>
-          <label className="block text-xs font-mono font-semibold uppercase tracking-wider text-zinc-400 mb-2">
-            3. Available Hardware & Tooling (Select multiple)
+          <label className="block text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-500 dark:text-[#8c909f] mb-2">
+            3. Available Hardware &amp; Tooling (Select multiple)
           </label>
           <div className="flex flex-wrap gap-2">
             {hardwareOptions.map((hw) => {
@@ -210,13 +219,13 @@ ${currentSpec.roadmapDays.map((r) => `### ${r.day}: ${r.task}\nDeliverable: ${r.
                 <button
                   key={hw}
                   onClick={() => toggleHardware(hw)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-all border ${
+                  className={`px-3 py-1.5 rounded-md text-xs font-mono transition-all border ${
                     isSelected
-                      ? "bg-zinc-800 text-emerald-400 border-zinc-700 shadow-xs font-semibold"
-                      : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:border-zinc-700 hover:text-zinc-200"
+                      ? "bg-blue-50 dark:bg-[#292a2f] text-blue-600 dark:text-[#adc6ff] border-blue-200 dark:border-blue-500/40 font-semibold"
+                      : "bg-slate-50 dark:bg-[#1a1b21] text-slate-600 dark:text-[#c2c6d6] border-slate-200 dark:border-[#292a2f] hover:text-slate-900 dark:hover:text-white"
                   }`}
                 >
-                  {isSelected && <span className="mr-1 text-emerald-400">✓</span>}
+                  {isSelected && <span className="mr-1">✓</span>}
                   {hw}
                 </button>
               );
@@ -227,31 +236,36 @@ ${currentSpec.roadmapDays.map((r) => `### ${r.day}: ${r.task}\nDeliverable: ${r.
         {/* Step 4: Optional Concept & Specific Requirements */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="block text-xs font-mono font-semibold uppercase tracking-wider text-zinc-400">
-              4. Concept & Specific Requirements <span className="text-zinc-500 font-normal lowercase">(optional)</span>
+            <label className="block text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-500 dark:text-[#8c909f]">
+              4. Concept &amp; Specific Requirements{" "}
+              <span className="text-slate-400 font-normal lowercase">(optional)</span>
             </label>
-            <span className="text-[10px] font-mono text-zinc-500">{customPrompt.length}/400</span>
+            <span className="text-[10px] font-mono text-slate-400 dark:text-[#8c909f]">
+              {customPrompt.length}/400
+            </span>
           </div>
           <textarea
             value={customPrompt}
             onChange={(e) => setCustomPrompt(e.target.value.slice(0, 400))}
             placeholder="Describe your vision, target application, or specific constraints... (e.g. 'Build an off-grid solar LoRa mesh node that relays wildfire sensor frames to a Next.js live telemetry map with sub-100ms packet updates')"
             rows={3}
-            className="w-full p-3 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-hidden focus:border-emerald-500 font-mono resize-none transition-colors"
+            className="w-full p-3 rounded-md bg-slate-50 dark:bg-[#1a1b21] border border-slate-200 dark:border-[#292a2f] text-xs text-slate-900 dark:text-[#e3e1e9] placeholder:text-slate-400 dark:placeholder:text-[#8c909f] focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono resize-none transition-colors"
           />
         </div>
 
         {/* Generate CTA Button */}
-        <div className="pt-2 flex items-center justify-between border-t border-zinc-800/80">
-          <div className="text-xs text-zinc-400 font-mono flex items-center gap-1.5">
-            <Cpu className="w-3.5 h-3.5 text-zinc-500" />
-            <span>Targeting {selectedHardware.length} components for {domain}</span>
+        <div className="pt-3 flex items-center justify-between border-t border-slate-100 dark:border-[#1e1f25]">
+          <div className="text-xs text-slate-500 dark:text-[#8c909f] font-mono flex items-center gap-1.5">
+            <Cpu className="w-3.5 h-3.5 text-blue-600 dark:text-[#adc6ff]" />
+            <span>
+              Targeting {selectedHardware.length} components for {domain}
+            </span>
           </div>
 
           <button
             onClick={handleGenerate}
             disabled={isGenerating}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-mono font-bold text-xs rounded-lg transition-all shadow-lg shadow-emerald-950/50"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold text-xs rounded-md transition-all shadow-xs active:scale-[0.99]"
           >
             {isGenerating ? (
               <>
@@ -269,18 +283,18 @@ ${currentSpec.roadmapDays.map((r) => `### ${r.day}: ${r.task}\nDeliverable: ${r.
 
         {/* Loading progress bar */}
         {isGenerating && (
-          <div className="p-3.5 bg-zinc-950 text-zinc-300 rounded-lg font-mono text-xs border border-zinc-800">
-            <div className="flex items-center gap-2 text-emerald-400 mb-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+          <div className="p-3.5 bg-slate-50 dark:bg-[#1a1b21] text-slate-700 dark:text-[#c2c6d6] rounded-md font-mono text-xs border border-slate-200 dark:border-[#292a2f]">
+            <div className="flex items-center gap-2 text-blue-600 dark:text-[#adc6ff] mb-1">
+              <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-[#adc6ff] animate-ping" />
               <span>Pipeline running:</span>
             </div>
-            <p className="text-zinc-400">{generationStep}</p>
+            <p className="text-slate-500 dark:text-[#8c909f]">{generationStep}</p>
           </div>
         )}
 
         {error && (
-          <div className="p-3 bg-rose-950/40 text-rose-300 rounded-lg font-mono text-xs border border-rose-500/40 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-400" />
+          <div className="p-3 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 rounded-md font-mono text-xs border border-rose-200 dark:border-rose-500/40 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-500 dark:text-rose-400" />
             <span>{error}</span>
           </div>
         )}
@@ -288,36 +302,38 @@ ${currentSpec.roadmapDays.map((r) => `### ${r.day}: ${r.task}\nDeliverable: ${r.
 
       {/* GENERATED SPEC DISPLAY */}
       {currentSpec && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-xl space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-5 border-b border-zinc-800">
+        <div className="bg-white dark:bg-[#0d0e13] border border-slate-200 dark:border-[#1e1f25] rounded-lg p-6 shadow-xs space-y-6 transition-colors">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-5 border-b border-slate-100 dark:border-[#1e1f25]">
             <div>
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-950/40 text-emerald-400 border border-emerald-500/30">
+              <div className="flex items-center flex-wrap gap-2 mb-1.5">
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-blue-50 dark:bg-[#292a2f] text-blue-600 dark:text-[#adc6ff] border border-blue-200/70 dark:border-transparent font-medium">
                   {currentSpec.domain}
                 </span>
-                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-950 text-zinc-400 border border-zinc-800">
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-[#1a1b21] text-slate-600 dark:text-[#c2c6d6] border border-slate-200 dark:border-[#292a2f]">
                   {currentSpec.difficulty}
                 </span>
-                <span className="text-[11px] font-mono text-zinc-500">
-                  Generated just now
+                <span className="text-[11px] font-mono text-slate-400 dark:text-[#8c909f]">
+                  {specSource === "gemini-api" ? "Synthesized by Gemini AI" : "Architecture Engine"}
                 </span>
               </div>
-              <h3 className="text-lg font-bold text-zinc-100">{currentSpec.title}</h3>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-[#e3e1e9]">
+                {currentSpec.title}
+              </h3>
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={handleCopyMarkdown}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-medium text-zinc-300 bg-zinc-950 hover:bg-zinc-800 rounded-lg border border-zinc-800 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-medium text-slate-700 dark:text-[#c2c6d6] bg-slate-50 dark:bg-[#1a1b21] hover:bg-slate-100 dark:hover:bg-[#292a2f] rounded-md border border-slate-200 dark:border-[#292a2f] transition-colors"
               >
                 {copied ? (
                   <>
-                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     <span>Copied!</span>
                   </>
                 ) : (
                   <>
-                    <Copy className="w-3.5 h-3.5 text-zinc-400" />
+                    <Copy className="w-3.5 h-3.5 text-slate-400" />
                     <span>Copy Markdown</span>
                   </>
                 )}
@@ -326,21 +342,21 @@ ${currentSpec.roadmapDays.map((r) => `### ${r.day}: ${r.task}\nDeliverable: ${r.
               <button
                 onClick={() => onSaveSpec(currentSpec)}
                 disabled={isCurrentSaved}
-                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-mono font-bold rounded-lg transition-all border ${
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all border ${
                   isCurrentSaved
-                    ? "bg-emerald-950/40 text-emerald-400 border-emerald-500/40 cursor-default"
-                    : "bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-500 shadow-xs"
+                    ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/40 cursor-default"
+                    : "bg-blue-600 text-white border-blue-600 hover:bg-blue-700 shadow-xs"
                 }`}
               >
                 {isCurrentSaved ? (
                   <>
-                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    <Check className="w-3.5 h-3.5" />
                     <span>Saved to Supabase</span>
                   </>
                 ) : (
                   <>
                     <Bookmark className="w-3.5 h-3.5" />
-                    <span>Save to My Dashboard</span>
+                    <span>Save to Dashboard</span>
                   </>
                 )}
               </button>
@@ -349,10 +365,10 @@ ${currentSpec.roadmapDays.map((r) => `### ${r.day}: ${r.task}\nDeliverable: ${r.
 
           {/* Problem Statement */}
           <div>
-            <h4 className="text-xs font-mono font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">
-              Problem Statement & Engineering Target
+            <h4 className="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-500 dark:text-[#8c909f] mb-1.5">
+              Problem Statement &amp; Engineering Target
             </h4>
-            <p className="text-xs text-zinc-300 leading-relaxed bg-zinc-950 p-3.5 rounded-lg border border-zinc-800 font-mono">
+            <p className="text-xs text-slate-700 dark:text-[#e3e1e9] leading-relaxed bg-[#e8eef5]/60 dark:bg-[#1a1b21] p-3.5 rounded-md border border-slate-300/60 dark:border-[#292a2f] font-mono">
               {currentSpec.problemStatement}
             </p>
           </div>
@@ -360,28 +376,32 @@ ${currentSpec.roadmapDays.map((r) => `### ${r.day}: ${r.task}\nDeliverable: ${r.
           {/* Bill of Materials (BOM) */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h4 className="text-xs font-mono font-semibold uppercase tracking-wider text-zinc-400">
-                Bill of Materials (BOM) & Estimated Costs
+              <h4 className="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-500 dark:text-[#8c909f]">
+                Bill of Materials (BOM) &amp; Estimated Costs
               </h4>
-              <span className="text-xs font-mono font-medium text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-500/30">
-                Est. Total: $20.80
+              <span className="text-xs font-mono font-medium text-blue-600 dark:text-[#adc6ff] bg-blue-50 dark:bg-[#292a2f] px-2 py-0.5 rounded border border-blue-200/70 dark:border-transparent tabular-nums">
+                Est. Total: ${estimatedTotal.toFixed(2)}
               </span>
             </div>
-            <div className="overflow-x-auto border border-zinc-800 rounded-lg">
+            <div className="overflow-x-auto border border-slate-200 dark:border-[#292a2f] rounded-md">
               <table className="w-full text-left text-xs font-mono">
-                <thead className="bg-zinc-950 text-zinc-400 text-[11px] border-b border-zinc-800">
+                <thead className="bg-slate-50 dark:bg-[#1a1b21] text-slate-500 dark:text-[#8c909f] text-[11px] border-b border-slate-200 dark:border-[#292a2f]">
                   <tr>
                     <th className="py-2 px-3">Component / Subsystem</th>
                     <th className="py-2 px-3">System Purpose</th>
                     <th className="py-2 px-3 text-right">Est. Cost</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-800/80">
+                <tbody className="divide-y divide-slate-100 dark:divide-[#1e1f25]">
                   {currentSpec.bom.map((b, idx) => (
-                    <tr key={idx} className="hover:bg-zinc-950/50">
-                      <td className="py-2 px-3 font-semibold text-zinc-200">{b.item}</td>
-                      <td className="py-2 px-3 text-zinc-400">{b.purpose}</td>
-                      <td className="py-2 px-3 text-right text-emerald-400 font-medium">
+                    <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-[#1a1b21]/50">
+                      <td className="py-2 px-3 font-semibold text-slate-900 dark:text-[#e3e1e9]">
+                        {b.item}
+                      </td>
+                      <td className="py-2 px-3 text-slate-600 dark:text-[#c2c6d6]">
+                        {b.purpose}
+                      </td>
+                      <td className="py-2 px-3 text-right text-blue-600 dark:text-[#adc6ff] font-medium tabular-nums">
                         {b.estimatedCost}
                       </td>
                     </tr>
@@ -393,16 +413,16 @@ ${currentSpec.roadmapDays.map((r) => `### ${r.day}: ${r.task}\nDeliverable: ${r.
 
           {/* Architecture Pipeline Steps */}
           <div>
-            <h4 className="text-xs font-mono font-semibold uppercase tracking-wider text-zinc-400 mb-2">
-              Architecture Pipeline & Execution Flow
+            <h4 className="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-500 dark:text-[#8c909f] mb-2">
+              Architecture Pipeline &amp; Execution Flow
             </h4>
             <div className="space-y-2">
               {currentSpec.architectureSteps.map((step, idx) => (
                 <div
                   key={idx}
-                  className="flex items-start gap-3 p-2.5 bg-zinc-950 rounded-lg border border-zinc-800 text-xs font-mono text-zinc-300"
+                  className="flex items-start gap-3 p-2.5 bg-slate-50 dark:bg-[#1a1b21] rounded-md border border-slate-200 dark:border-[#292a2f] text-xs font-mono text-slate-700 dark:text-[#e3e1e9]"
                 >
-                  <span className="w-5 h-5 rounded-full bg-zinc-800 text-emerald-400 flex items-center justify-center text-[10px] font-bold shrink-0">
+                  <span className="w-5 h-5 rounded bg-blue-50 dark:bg-[#292a2f] text-blue-600 dark:text-[#adc6ff] border border-blue-200/70 dark:border-transparent flex items-center justify-center text-[10px] font-bold shrink-0">
                     {idx + 1}
                   </span>
                   <span>{step}</span>
@@ -413,23 +433,27 @@ ${currentSpec.roadmapDays.map((r) => `### ${r.day}: ${r.task}\nDeliverable: ${r.
 
           {/* 7-Day Roadmap */}
           <div>
-            <h4 className="text-xs font-mono font-semibold uppercase tracking-wider text-zinc-400 mb-2">
+            <h4 className="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-500 dark:text-[#8c909f] mb-2">
               Milestone Execution Roadmap
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {currentSpec.roadmapDays.map((r, idx) => (
                 <div
                   key={idx}
-                  className="p-3 bg-zinc-950 border border-zinc-800 rounded-lg space-y-1.5"
+                  className="p-3 bg-slate-50 dark:bg-[#1a1b21] border border-slate-200 dark:border-[#292a2f] rounded-md space-y-1.5"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-mono font-bold text-zinc-200 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">
+                    <span className="text-[11px] font-mono font-bold text-blue-600 dark:text-[#adc6ff] bg-blue-50 dark:bg-[#292a2f] px-2 py-0.5 rounded border border-blue-200/70 dark:border-transparent">
                       {r.day}
                     </span>
-                    <span className="text-[10px] font-mono text-zinc-500">Milestone</span>
+                    <span className="text-[10px] font-mono text-slate-400 dark:text-[#8c909f]">
+                      Milestone
+                    </span>
                   </div>
-                  <p className="text-xs font-medium text-zinc-300">{r.task}</p>
-                  <div className="text-[11px] font-mono text-emerald-400 bg-emerald-950/20 px-2 py-1 rounded border border-emerald-500/20">
+                  <p className="text-xs font-medium text-slate-800 dark:text-[#e3e1e9]">
+                    {r.task}
+                  </p>
+                  <div className="text-[11px] font-mono text-blue-700 dark:text-[#adc6ff] bg-[#e8eef5]/70 dark:bg-[#0d0e13] px-2 py-1 rounded border border-slate-300/60 dark:border-[#292a2f]">
                     Deliverable: {r.deliverable}
                   </div>
                 </div>

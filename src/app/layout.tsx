@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Inter, JetBrains_Mono } from "next/font/google";
 import { Suspense } from "react";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { Navbar } from "@/components/layout/Navbar";
 
 const geistSans = Geist({
@@ -10,8 +11,13 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
   subsets: ["latin"],
 });
 
@@ -29,38 +35,66 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${inter.variable} ${jetbrainsMono.variable} h-full antialiased light`}
     >
-      <body className="min-h-full flex flex-col bg-zinc-950 text-zinc-100 cyber-grid relative selection:bg-emerald-500/20 selection:text-emerald-400">
-        {/* Subtle Ambient Engineering Radiance Background */}
-        <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[1100px] h-[350px] bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(16,185,129,0.08),transparent)] pointer-events-none z-0" />
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var t = localStorage.getItem('aevora_theme');
+                  if (t === 'dark') {
+                    document.documentElement.classList.add('dark');
+                    document.documentElement.classList.remove('light');
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                    document.documentElement.classList.add('light');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body className="min-h-full flex flex-col bg-[#f8fafc] dark:bg-[#121318] text-slate-900 dark:text-[#e3e1e9] tech-grid relative selection:bg-blue-600/20 selection:text-blue-700 dark:selection:bg-blue-500/30 dark:selection:text-[#adc6ff]">
+        {/* Ambient Engineering Radial Glow */}
+        <div className="fixed inset-0 pointer-events-none opacity-80 dark:opacity-40 [background-image:radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(37,99,235,0.10),transparent_70%)] dark:[background-image:radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(77,142,255,0.12),transparent_70%)] z-0" />
 
-        <AuthProvider>
-          <div className="relative z-10 flex flex-col min-h-screen">
-            <Suspense fallback={<div className="h-14 border-b border-zinc-800 bg-zinc-950" />}>
-              <Navbar />
-            </Suspense>
-            <main className="flex-1">{children}</main>
+        <ThemeProvider>
+          <AuthProvider>
+            <div className="relative z-10 flex flex-col min-h-screen">
+              <Suspense
+                fallback={
+                  <div className="h-16 border-b border-slate-200 dark:border-[#1e1f25] bg-white/90 dark:bg-[#0d0e13]/85" />
+                }
+              >
+                <Navbar />
+              </Suspense>
 
-            {/* Engineering Footer */}
-            <footer className="border-t border-zinc-800 bg-zinc-950/80 backdrop-blur-md py-5 text-center text-xs font-mono text-zinc-500 relative z-10">
-              <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-emerald-400">AEVORA // FORGE</span>
-                  <span className="text-zinc-600">/</span>
-                  <span className="text-zinc-400">The Proof-of-Work Hub for Hardware & AI</span>
+              <main className="flex-1">{children}</main>
+
+              {/* Precision Engineering Footer */}
+              <footer className="border-t border-slate-200 dark:border-[#1e1f25] bg-white/80 dark:bg-[#0d0e13] py-4 px-6 text-[11px] font-mono text-slate-500 dark:text-[#8c909f] relative z-10 transition-colors">
+                <div className="max-w-[1440px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 tracking-wide">
+                  <div className="flex items-center gap-3">
+                    <span className="font-semibold text-slate-800 dark:text-[#c2c6d6]">
+                      AEVORA FORGE ARCHITECTURE
+                    </span>
+                    <span className="text-slate-300 dark:text-[#424754]">·</span>
+                    <span>NODE LATENCY 14MS</span>
+                    <span className="text-slate-300 dark:text-[#424754]">·</span>
+                    <span className="text-emerald-600 dark:text-emerald-400">STATUS OK</span>
+                  </div>
+                  <div>
+                    <span>© 2026 Aevora Systems. Hardware, Systems &amp; AI Telemetry.</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-4 text-[11px] text-zinc-500">
-                  <span>Hardware & AI Systems</span>
-                  <span className="text-zinc-700">•</span>
-                  <span>Zero Vaporware</span>
-                  <span className="text-zinc-700">•</span>
-                  <span>v2.5.0</span>
-                </div>
-              </div>
-            </footer>
-          </div>
-        </AuthProvider>
+              </footer>
+            </div>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

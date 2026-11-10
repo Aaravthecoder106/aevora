@@ -49,7 +49,9 @@ export function SubmitBuildModal({
       author: {
         name: authorName,
         username: authorUsername,
-        avatar: profile?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${authorUsername}`,
+        avatar:
+          profile?.avatar_url ||
+          `https://api.dicebear.com/7.x/bottts/svg?seed=${authorUsername}`,
         streak: (profile?.streak_count || 0) + 1,
         badge: "Sprint Contender",
       },
@@ -76,38 +78,45 @@ export function SubmitBuildModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 dark:bg-black/80 backdrop-blur-sm">
+      <div className="bg-white dark:bg-[#0d0e13] border border-slate-200 dark:border-[#1e1f25] rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-950/40 text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
-              <Zap className="w-4 h-4 text-emerald-400" />
+        <div className="px-6 py-4 border-b border-slate-200 dark:border-[#1e1f25] flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-[#292a2f] text-blue-600 dark:text-[#adc6ff] border border-blue-200/70 dark:border-transparent flex items-center justify-center">
+              <Zap className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-zinc-100">Submit Sprint Build Log</h3>
-              <p className="text-xs text-zinc-400 font-mono">Log verified progress & claim milestone XP</p>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-[#e3e1e9]">
+                Submit Sprint Build Log
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-[#8c909f] font-mono">
+                Log verified progress &amp; claim milestone XP
+              </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-zinc-500 hover:text-zinc-200 transition-colors p-1"
+            className="text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors p-1"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto font-mono text-xs">
+        <form
+          onSubmit={handleSubmit}
+          className="p-6 space-y-4 max-h-[75vh] overflow-y-auto font-mono text-xs"
+        >
           {/* Target Challenge */}
           <div>
-            <label className="block text-[11px] uppercase tracking-wider text-zinc-400 mb-1">
+            <label className="block text-[11px] uppercase tracking-wider text-slate-500 dark:text-[#8c909f] mb-1">
               Select Sprint / Challenge
             </label>
             <select
               value={selectedChallengeId}
               onChange={(e) => setSelectedChallengeId(e.target.value)}
-              className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-100 focus:outline-hidden focus:border-emerald-500 font-medium"
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-[#1a1b21] border border-slate-200 dark:border-[#292a2f] rounded-md text-slate-900 dark:text-[#e3e1e9] focus:outline-none focus:border-blue-500 font-medium"
             >
               {challenges.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -119,14 +128,14 @@ export function SubmitBuildModal({
 
           {/* Build Log Content */}
           <div>
-            <label className="block text-[11px] uppercase tracking-wider text-zinc-400 mb-1">
-              Ship Log & Technical Progress
+            <label className="block text-[11px] uppercase tracking-wider text-slate-500 dark:text-[#8c909f] mb-1">
+              Ship Log &amp; Technical Progress
             </label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
               rows={3}
-              className="w-full p-3 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-100 focus:outline-hidden focus:border-emerald-500 leading-relaxed font-sans"
+              className="w-full p-3 bg-slate-50 dark:bg-[#1a1b21] border border-slate-200 dark:border-[#292a2f] rounded-md text-slate-900 dark:text-[#e3e1e9] focus:outline-none focus:border-blue-500 leading-relaxed font-sans"
               placeholder="What working milestone did you achieve today? Detail the circuit bringup, firmware patch, or bench test results..."
               required
             />
@@ -135,37 +144,37 @@ export function SubmitBuildModal({
           {/* Links */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] uppercase tracking-wider text-zinc-400 mb-1">
+              <label className="block text-[11px] uppercase tracking-wider text-slate-500 dark:text-[#8c909f] mb-1">
                 Repository / CAD Link
               </label>
               <input
                 type="url"
                 value={repoUrl}
                 onChange={(e) => setRepoUrl(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 focus:outline-hidden focus:border-emerald-500 text-[11px]"
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-[#1a1b21] border border-slate-200 dark:border-[#292a2f] rounded-md text-slate-900 dark:text-[#e3e1e9] focus:outline-none focus:border-blue-500 text-[11px]"
                 placeholder="https://github.com/..."
               />
             </div>
 
             <div>
-              <label className="block text-[11px] uppercase tracking-wider text-zinc-400 mb-1">
+              <label className="block text-[11px] uppercase tracking-wider text-slate-500 dark:text-[#8c909f] mb-1">
                 Demo Link / Video (Optional)
               </label>
               <input
                 type="url"
                 value={demoUrl}
                 onChange={(e) => setDemoUrl(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 focus:outline-hidden focus:border-emerald-500 text-[11px]"
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-[#1a1b21] border border-slate-200 dark:border-[#292a2f] rounded-md text-slate-900 dark:text-[#e3e1e9] focus:outline-none focus:border-blue-500 text-[11px]"
                 placeholder="https://..."
               />
             </div>
           </div>
 
           {/* Terminal / Snippet proof */}
-          <div className="p-3.5 bg-zinc-950 border border-zinc-800 rounded-xl space-y-2">
+          <div className="p-3.5 bg-[#e8eef5]/60 dark:bg-[#1a1b21] border border-slate-300/60 dark:border-[#292a2f] rounded-lg space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
-                <Terminal className="w-3.5 h-3.5 text-emerald-400" />
+              <label className="text-xs font-bold text-slate-700 dark:text-[#c2c6d6] flex items-center gap-1.5">
+                <Terminal className="w-3.5 h-3.5 text-blue-600 dark:text-[#adc6ff]" />
                 <span>Proof of Work (Terminal / Telemetry Trace)</span>
               </label>
               <input
@@ -173,30 +182,30 @@ export function SubmitBuildModal({
                 value={snippetTitle}
                 onChange={(e) => setSnippetTitle(e.target.value)}
                 placeholder="file or log name"
-                className="text-[10px] px-2 py-0.5 bg-zinc-900 border border-zinc-800 rounded text-zinc-400"
+                className="text-[10px] px-2 py-0.5 bg-white dark:bg-[#0d0e13] border border-slate-200 dark:border-[#292a2f] rounded text-slate-600 dark:text-[#8c909f]"
               />
             </div>
             <textarea
               value={snippetBody}
               onChange={(e) => setSnippetBody(e.target.value)}
               rows={3}
-              className="w-full p-2.5 text-[11px] bg-zinc-900 text-emerald-400 rounded-lg border border-zinc-800 focus:outline-hidden leading-relaxed"
+              className="w-full p-2.5 text-[11px] bg-white dark:bg-[#0d0e13] text-blue-700 dark:text-[#adc6ff] rounded-md border border-slate-200 dark:border-[#292a2f] focus:outline-none focus:border-blue-500 leading-relaxed"
               placeholder="Paste terminal log, compiler output, or logic analyzer serial frame..."
             />
           </div>
 
           {/* Actions */}
-          <div className="pt-2 flex items-center justify-end gap-2 border-t border-zinc-800">
+          <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-100 dark:border-[#1e1f25]">
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 py-2 text-zinc-400 hover:text-zinc-200 transition-colors"
+              className="px-3.5 py-2 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-colors shadow-xs"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md transition-colors shadow-xs font-sans"
             >
               <Check className="w-3.5 h-3.5" />
               <span>Submit to Sprint</span>

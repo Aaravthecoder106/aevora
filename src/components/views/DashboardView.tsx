@@ -5,10 +5,8 @@ import {
   UserDashboardData,
   ProjectItem,
   CollabApplication,
-  AISpec,
 } from "@/lib/types/community";
 import {
-  User,
   Flame,
   Rocket,
   Award,
@@ -18,14 +16,12 @@ import {
   X,
   Plus,
   ExternalLink,
-  Layers,
-  Code,
   Trash2,
   Calendar,
   CheckCircle2,
   LogOut,
 } from "lucide-react";
-import { GithubIcon, DiscordIcon } from "@/components/ui/Icons";
+import { GithubIcon } from "@/components/ui/Icons";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 interface DashboardViewProps {
@@ -48,7 +44,6 @@ export function DashboardView({
   const { signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<"projects" | "collabs" | "specs">("projects");
 
-  // Generate synthetic 12-week heatmap data based on real streak/ship counts
   const heatmapDays = Array.from({ length: 84 }, (_, i) => {
     const isRecent = i >= 84 - (userData.streakCount || 1);
     const count = isRecent ? 2 : (i * 7 + 13) % 9 > 6 ? 1 : 0;
@@ -59,26 +54,31 @@ export function DashboardView({
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Profile Header Card */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 shadow-xl">
+      <div className="bg-white dark:bg-[#0d0e13] border border-slate-200 dark:border-[#1e1f25] rounded-lg p-6 shadow-xs transition-colors">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
           <div className="flex items-start gap-4">
             <img
               src={userData.avatar}
               alt={userData.name}
-              className="w-16 h-16 rounded-xl border-2 border-emerald-500/30 bg-zinc-950 p-0.5 object-cover"
+              className="w-16 h-16 rounded-xl ring-2 ring-blue-500/30 bg-slate-50 dark:bg-[#1a1b21] p-0.5 object-cover"
             />
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-xl font-bold text-zinc-100">{userData.name}</h2>
-                <span className="text-xs font-mono text-zinc-400">@{userData.username}</span>
-                <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-emerald-950/40 text-emerald-400 border border-emerald-500/30 font-medium">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-[#e3e1e9]">
+                  {userData.name}
+                </h2>
+                <span className="text-xs font-mono text-slate-500 dark:text-[#8c909f]">
+                  @{userData.username}
+                </span>
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-blue-50 dark:bg-[#292a2f] text-blue-600 dark:text-[#adc6ff] border border-blue-200/70 dark:border-transparent font-medium">
                   {userData.role}
                 </span>
               </div>
-              <p className="text-xs text-zinc-400 mt-2 max-w-xl leading-relaxed font-sans">
-                {userData.bio || "Hardware and systems engineer logging verifiable proof of work on Aevora Forge."}
+              <p className="text-xs text-slate-600 dark:text-[#c2c6d6] mt-2 max-w-xl leading-relaxed">
+                {userData.bio ||
+                  "Hardware and systems engineer logging verifiable proof of work on Aevora Forge."}
               </p>
 
               {/* Tech Stack Tags */}
@@ -87,13 +87,13 @@ export function DashboardView({
                   userData.techStack.map((tech) => (
                     <span
                       key={tech}
-                      className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-950 text-zinc-400 border border-zinc-800"
+                      className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-[#1a1b21] text-slate-700 dark:text-[#c2c6d6] border border-slate-200 dark:border-[#292a2f]"
                     >
                       {tech}
                     </span>
                   ))
                 ) : (
-                  <span className="text-[10px] font-mono text-zinc-600">
+                  <span className="text-[10px] font-mono text-slate-400 dark:text-[#8c909f]">
                     No stack tags defined yet
                   </span>
                 )}
@@ -109,7 +109,7 @@ export function DashboardView({
                   href={userData.githubUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-2 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-zinc-100 transition-colors"
+                  className="p-2 rounded-md bg-slate-50 dark:bg-[#1a1b21] border border-slate-200 dark:border-[#292a2f] text-slate-500 hover:text-blue-600 dark:hover:text-[#adc6ff] transition-colors"
                   title="GitHub Profile"
                 >
                   <GithubIcon className="w-4 h-4" />
@@ -117,16 +117,16 @@ export function DashboardView({
               )}
               <button
                 onClick={onOpenListProject}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-mono font-bold rounded-lg transition-colors shadow-xs"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md transition-colors shadow-xs"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>+ List Build</span>
+                <span>List Build</span>
               </button>
             </div>
 
             <button
               onClick={() => signOut()}
-              className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-mono text-rose-400 hover:text-rose-300 hover:bg-rose-950/30 rounded-lg transition-colors border border-rose-500/20"
+              className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-mono text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-md transition-colors border border-rose-200 dark:border-rose-500/20"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Sign Out</span>
@@ -135,64 +135,64 @@ export function DashboardView({
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-zinc-800">
-          <div className="p-3 bg-zinc-950 rounded-lg border border-zinc-800">
-            <div className="flex items-center justify-between text-zinc-500 mb-1">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-slate-100 dark:border-[#1e1f25]">
+          <div className="p-3 bg-slate-50 dark:bg-[#1a1b21] rounded-md border border-slate-200 dark:border-[#292a2f]">
+            <div className="flex items-center justify-between text-slate-500 dark:text-[#8c909f] mb-1">
               <span className="text-[10px] font-mono uppercase tracking-wider">Active Streak</span>
-              <Flame className="w-4 h-4 text-orange-400 fill-orange-400" />
+              <Flame className="w-4 h-4 text-blue-600 dark:text-[#adc6ff]" />
             </div>
-            <div className="text-lg font-bold font-mono text-zinc-100">
+            <div className="text-lg font-bold font-mono text-slate-900 dark:text-[#e3e1e9] tabular-nums">
               {userData.streakCount} Days
             </div>
           </div>
 
-          <div className="p-3 bg-zinc-950 rounded-lg border border-zinc-800">
-            <div className="flex items-center justify-between text-zinc-500 mb-1">
+          <div className="p-3 bg-slate-50 dark:bg-[#1a1b21] rounded-md border border-slate-200 dark:border-[#292a2f]">
+            <div className="flex items-center justify-between text-slate-500 dark:text-[#8c909f] mb-1">
               <span className="text-[10px] font-mono uppercase tracking-wider">Logged Ships</span>
-              <Rocket className="w-4 h-4 text-emerald-400" />
+              <Rocket className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             </div>
-            <div className="text-lg font-bold font-mono text-zinc-100">
+            <div className="text-lg font-bold font-mono text-slate-900 dark:text-[#e3e1e9] tabular-nums">
               {userData.totalShips} Logs
             </div>
           </div>
 
-          <div className="p-3 bg-zinc-950 rounded-lg border border-zinc-800">
-            <div className="flex items-center justify-between text-zinc-500 mb-1">
+          <div className="p-3 bg-slate-50 dark:bg-[#1a1b21] rounded-md border border-slate-200 dark:border-[#292a2f]">
+            <div className="flex items-center justify-between text-slate-500 dark:text-[#8c909f] mb-1">
               <span className="text-[10px] font-mono uppercase tracking-wider">Builder XP</span>
-              <Award className="w-4 h-4 text-blue-400" />
+              <Award className="w-4 h-4 text-blue-600 dark:text-[#adc6ff]" />
             </div>
-            <div className="text-lg font-bold font-mono text-zinc-100">
+            <div className="text-lg font-bold font-mono text-blue-600 dark:text-[#adc6ff] tabular-nums">
               {userData.xpPoints} XP
             </div>
           </div>
 
-          <div className="p-3 bg-zinc-950 rounded-lg border border-zinc-800">
-            <div className="flex items-center justify-between text-zinc-500 mb-1">
+          <div className="p-3 bg-slate-50 dark:bg-[#1a1b21] rounded-md border border-slate-200 dark:border-[#292a2f]">
+            <div className="flex items-center justify-between text-slate-500 dark:text-[#8c909f] mb-1">
               <span className="text-[10px] font-mono uppercase tracking-wider">Collab Requests</span>
-              <GitPullRequest className="w-4 h-4 text-purple-400" />
+              <GitPullRequest className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             </div>
-            <div className="text-lg font-bold font-mono text-zinc-100">
+            <div className="text-lg font-bold font-mono text-slate-900 dark:text-[#e3e1e9] tabular-nums">
               {collabApplications.length} Active
             </div>
           </div>
         </div>
       </div>
 
-      {/* GitHub-style Proof-of-Work Contribution Heatmap */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 shadow-xl">
+      {/* Proof-of-Work Activity Heatmap */}
+      <div className="bg-white dark:bg-[#0d0e13] border border-slate-200 dark:border-[#1e1f25] rounded-lg p-5 shadow-xs transition-colors">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-emerald-400" />
-            <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-300">
+            <Calendar className="w-4 h-4 text-blue-600 dark:text-[#adc6ff]" />
+            <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-700 dark:text-[#c2c6d6]">
               Proof-of-Work Activity Heatmap (Last 12 Weeks)
             </h3>
           </div>
-          <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-500">
+          <div className="flex items-center gap-1.5 text-[10px] font-mono text-slate-400 dark:text-[#8c909f]">
             <span>Less</span>
-            <div className="w-2.5 h-2.5 bg-zinc-950 rounded-xs border border-zinc-800" />
-            <div className="w-2.5 h-2.5 bg-emerald-950 rounded-xs border border-emerald-800" />
-            <div className="w-2.5 h-2.5 bg-emerald-700 rounded-xs" />
-            <div className="w-2.5 h-2.5 bg-emerald-400 rounded-xs" />
+            <div className="w-2.5 h-2.5 bg-slate-100 dark:bg-[#1a1b21] rounded-xs border border-slate-200 dark:border-[#292a2f]" />
+            <div className="w-2.5 h-2.5 bg-blue-200 dark:bg-blue-950 rounded-xs border border-blue-300 dark:border-blue-800" />
+            <div className="w-2.5 h-2.5 bg-blue-500 dark:bg-blue-600 rounded-xs" />
+            <div className="w-2.5 h-2.5 bg-blue-600 dark:bg-[#adc6ff] rounded-xs" />
             <span>More</span>
           </div>
         </div>
@@ -202,12 +202,12 @@ export function DashboardView({
             {heatmapDays.map((d) => {
               const bgClass =
                 d.count === 0
-                  ? "bg-zinc-950 border border-zinc-800/80"
+                  ? "bg-slate-100 dark:bg-[#1a1b21] border border-slate-200 dark:border-[#292a2f]"
                   : d.count === 1
-                  ? "bg-emerald-950 border border-emerald-800"
+                  ? "bg-blue-200 dark:bg-blue-950 border border-blue-300 dark:border-blue-800"
                   : d.count === 2
-                  ? "bg-emerald-700"
-                  : "bg-emerald-400";
+                  ? "bg-blue-500 dark:bg-blue-600"
+                  : "bg-blue-600 dark:bg-[#adc6ff]";
               return (
                 <div
                   key={d.dayIndex}
@@ -221,13 +221,13 @@ export function DashboardView({
       </div>
 
       {/* Dashboard Section Switcher */}
-      <div className="flex items-center gap-2 border-b border-zinc-800 pb-2">
+      <div className="flex items-center gap-1.5 border-b border-slate-200 dark:border-[#1e1f25] pb-2">
         <button
           onClick={() => setActiveTab("projects")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
             activeTab === "projects"
-              ? "bg-zinc-800 text-zinc-100 shadow-xs"
-              : "text-zinc-400 hover:text-zinc-200"
+              ? "bg-white dark:bg-[#292a2f] text-blue-600 dark:text-[#adc6ff] border border-slate-200 dark:border-transparent font-semibold shadow-xs"
+              : "text-slate-600 dark:text-[#c2c6d6] hover:text-slate-900 dark:hover:text-white"
           }`}
         >
           <Rocket className="w-3.5 h-3.5" />
@@ -236,10 +236,10 @@ export function DashboardView({
 
         <button
           onClick={() => setActiveTab("collabs")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
             activeTab === "collabs"
-              ? "bg-zinc-800 text-zinc-100 shadow-xs"
-              : "text-zinc-400 hover:text-zinc-200"
+              ? "bg-white dark:bg-[#292a2f] text-blue-600 dark:text-[#adc6ff] border border-slate-200 dark:border-transparent font-semibold shadow-xs"
+              : "text-slate-600 dark:text-[#c2c6d6] hover:text-slate-900 dark:hover:text-white"
           }`}
         >
           <GitPullRequest className="w-3.5 h-3.5" />
@@ -248,10 +248,10 @@ export function DashboardView({
 
         <button
           onClick={() => setActiveTab("specs")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
             activeTab === "specs"
-              ? "bg-zinc-800 text-zinc-100 shadow-xs"
-              : "text-zinc-400 hover:text-zinc-200"
+              ? "bg-white dark:bg-[#292a2f] text-blue-600 dark:text-[#adc6ff] border border-slate-200 dark:border-transparent font-semibold shadow-xs"
+              : "text-slate-600 dark:text-[#c2c6d6] hover:text-slate-900 dark:hover:text-white"
           }`}
         >
           <Sparkles className="w-3.5 h-3.5" />
@@ -263,13 +263,17 @@ export function DashboardView({
       {activeTab === "projects" && (
         <div className="space-y-4">
           {userProjects.length === 0 ? (
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8 text-center space-y-2">
-              <Rocket className="w-8 h-8 text-zinc-600 mx-auto" />
-              <p className="text-sm font-mono font-bold text-zinc-300">No builds listed yet</p>
-              <p className="text-xs text-zinc-500 font-mono">List your hardware or systems repo to find teammates and recruit collaborators.</p>
+            <div className="bg-white dark:bg-[#0d0e13] border border-slate-200 dark:border-[#1e1f25] rounded-lg p-8 text-center space-y-2 shadow-xs">
+              <Rocket className="w-8 h-8 text-blue-600 dark:text-[#adc6ff] mx-auto" />
+              <p className="text-sm font-mono font-semibold text-slate-900 dark:text-[#e3e1e9]">
+                No builds listed yet
+              </p>
+              <p className="text-xs text-slate-500 dark:text-[#8c909f] font-mono">
+                List your hardware or systems repo to find teammates and recruit collaborators.
+              </p>
               <button
                 onClick={onOpenListProject}
-                className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-mono font-bold rounded-lg transition-colors"
+                className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md transition-colors shadow-xs"
               >
                 <Plus className="w-3.5 h-3.5" />
                 List Your First Project
@@ -280,27 +284,31 @@ export function DashboardView({
               {userProjects.map((proj) => (
                 <div
                   key={proj.id}
-                  className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 shadow-xl flex flex-col justify-between"
+                  className="bg-white dark:bg-[#0d0e13] border border-slate-200 dark:border-[#1e1f25] rounded-lg p-5 shadow-xs flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-950/40 text-emerald-400 border border-emerald-500/30 font-medium">
+                      <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-blue-50 dark:bg-[#292a2f] text-blue-600 dark:text-[#adc6ff] border border-blue-200/70 dark:border-transparent font-medium">
                         {proj.status}
                       </span>
                       {proj.lookingForCollab && (
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-950/40 text-purple-300 border border-purple-500/30">
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-[#1a1b21] text-slate-600 dark:text-[#c2c6d6] border border-slate-200 dark:border-[#292a2f]">
                           Recruiting Collaborators
                         </span>
                       )}
                     </div>
-                    <h4 className="text-sm font-bold text-zinc-100">{proj.title}</h4>
-                    <p className="text-xs text-zinc-400 mt-1 line-clamp-2">{proj.description}</p>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-[#e3e1e9]">
+                      {proj.title}
+                    </h4>
+                    <p className="text-xs text-slate-600 dark:text-[#8c909f] mt-1 line-clamp-2">
+                      {proj.description}
+                    </p>
 
                     <div className="flex flex-wrap gap-1 mt-3">
                       {proj.techStack.map((tech) => (
                         <span
                           key={tech}
-                          className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-950 text-zinc-400 border border-zinc-800"
+                          className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-[#1a1b21] text-slate-700 dark:text-[#c2c6d6] border border-slate-200 dark:border-[#292a2f]"
                         >
                           {tech}
                         </span>
@@ -308,8 +316,8 @@ export function DashboardView({
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-zinc-800 flex items-center justify-between text-xs">
-                    <span className="font-mono text-[11px] text-zinc-500">
+                  <div className="mt-4 pt-3 border-t border-slate-100 dark:border-[#1e1f25] flex items-center justify-between text-xs">
+                    <span className="font-mono text-[11px] text-slate-500 dark:text-[#8c909f]">
                       Shipped: {proj.shippedAt}
                     </span>
                     {proj.repoUrl && (
@@ -317,7 +325,7 @@ export function DashboardView({
                         href={proj.repoUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-zinc-400 hover:text-emerald-400 font-mono text-[11px] transition-colors"
+                        className="inline-flex items-center gap-1 text-slate-500 hover:text-blue-600 dark:hover:text-[#adc6ff] font-mono text-[11px] transition-colors"
                       >
                         <GithubIcon className="w-3.5 h-3.5" />
                         <span>Source</span>
@@ -336,10 +344,12 @@ export function DashboardView({
       {activeTab === "collabs" && (
         <div className="space-y-3">
           {collabApplications.length === 0 ? (
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8 text-center space-y-2">
-              <GitPullRequest className="w-8 h-8 text-zinc-600 mx-auto" />
-              <p className="text-sm font-mono font-bold text-zinc-300">No collaboration requests</p>
-              <p className="text-xs text-zinc-500 font-mono">
+            <div className="bg-white dark:bg-[#0d0e13] border border-slate-200 dark:border-[#1e1f25] rounded-lg p-8 text-center space-y-2 shadow-xs">
+              <GitPullRequest className="w-8 h-8 text-blue-600 dark:text-[#adc6ff] mx-auto" />
+              <p className="text-sm font-mono font-semibold text-slate-900 dark:text-[#e3e1e9]">
+                No collaboration requests
+              </p>
+              <p className="text-xs text-slate-500 dark:text-[#8c909f] font-mono">
                 When fellow builders apply to join your projects, requests will appear here for your review.
               </p>
             </div>
@@ -347,36 +357,42 @@ export function DashboardView({
             collabApplications.map((app) => (
               <div
                 key={app.id}
-                className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4"
+                className="bg-white dark:bg-[#0d0e13] border border-slate-200 dark:border-[#1e1f25] rounded-lg p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4"
               >
                 <div className="flex items-start gap-3.5">
                   <img
                     src={app.applicant.avatar}
                     alt={app.applicant.name}
-                    className="w-10 h-10 rounded-full border border-zinc-800 object-cover bg-zinc-950 mt-0.5"
+                    className="w-10 h-10 rounded-full ring-1 ring-slate-200 dark:ring-[#424754] object-cover bg-slate-50 dark:bg-[#1a1b21] mt-0.5"
                   />
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-bold text-zinc-200">
+                      <span className="text-xs font-bold text-slate-900 dark:text-[#e3e1e9]">
                         {app.applicant.name}
                       </span>
-                      <span className="text-[11px] font-mono text-zinc-500">
+                      <span className="text-[11px] font-mono text-slate-500 dark:text-[#8c909f]">
                         @{app.applicant.username}
                       </span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-950 text-zinc-400 border border-zinc-800">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-[#1a1b21] text-slate-600 dark:text-[#c2c6d6] border border-slate-200 dark:border-[#292a2f]">
                         {app.applicant.roleTag}
                       </span>
-                      <span className="text-[10px] font-mono text-zinc-500">
+                      <span className="text-[10px] font-mono text-slate-400 dark:text-[#8c909f]">
                         • {app.timestamp}
                       </span>
                     </div>
 
-                    <div className="text-xs mt-1 text-zinc-300 font-mono">
-                      Applied for <span className="font-bold text-emerald-400">{app.roleApplied}</span> on{" "}
-                      <span className="text-zinc-100 font-semibold">{app.projectTitle}</span>
+                    <div className="text-xs mt-1 text-slate-700 dark:text-[#c2c6d6] font-mono">
+                      Applied for{" "}
+                      <span className="font-bold text-blue-600 dark:text-[#adc6ff]">
+                        {app.roleApplied}
+                      </span>{" "}
+                      on{" "}
+                      <span className="text-slate-900 dark:text-[#e3e1e9] font-semibold">
+                        {app.projectTitle}
+                      </span>
                     </div>
 
-                    <p className="text-xs text-zinc-400 mt-2 bg-zinc-950 p-2.5 rounded-lg border border-zinc-800 font-mono">
+                    <p className="text-xs text-slate-600 dark:text-[#c2c6d6] mt-2 bg-slate-50 dark:bg-[#1a1b21] p-2.5 rounded-md border border-slate-200 dark:border-[#292a2f] font-mono">
                       &quot;{app.pitch}&quot;
                     </p>
                   </div>
@@ -388,14 +404,14 @@ export function DashboardView({
                     <>
                       <button
                         onClick={() => onUpdateAppStatus(app.id, "Accepted")}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-mono font-bold rounded-lg transition-colors shadow-xs"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md transition-colors shadow-xs"
                       >
                         <Check className="w-3.5 h-3.5" />
                         <span>Accept</span>
                       </button>
                       <button
                         onClick={() => onUpdateAppStatus(app.id, "Declined")}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-mono font-bold rounded-lg transition-colors border border-zinc-700"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 dark:bg-[#1a1b21] hover:bg-slate-200 dark:hover:bg-[#292a2f] text-slate-700 dark:text-[#c2c6d6] text-xs font-medium rounded-md transition-colors border border-slate-200 dark:border-[#292a2f]"
                       >
                         <X className="w-3.5 h-3.5" />
                         <span>Decline</span>
@@ -403,13 +419,15 @@ export function DashboardView({
                     </>
                   ) : (
                     <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-mono font-medium ${
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-mono font-medium ${
                         app.status === "Accepted"
-                          ? "bg-emerald-950/40 text-emerald-400 border border-emerald-500/30"
-                          : "bg-zinc-950 text-zinc-500 border border-zinc-800"
+                          ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30"
+                          : "bg-slate-100 dark:bg-[#1a1b21] text-slate-500 dark:text-[#8c909f] border border-slate-200 dark:border-[#292a2f]"
                       }`}
                     >
-                      {app.status === "Accepted" && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
+                      {app.status === "Accepted" && (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      )}
                       {app.status}
                     </span>
                   )}
@@ -424,62 +442,72 @@ export function DashboardView({
       {activeTab === "specs" && (
         <div className="space-y-4">
           {userData.savedSpecs.length === 0 ? (
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8 text-center space-y-2">
-              <Sparkles className="w-8 h-8 text-zinc-600 mx-auto" />
-              <p className="text-sm font-mono font-bold text-zinc-300">No saved build blueprints</p>
-              <p className="text-xs text-zinc-500 font-mono">
-                Use the AI Idea & Spec Generator in the sidebar to architect a build plan and save it directly to Supabase.
+            <div className="bg-white dark:bg-[#0d0e13] border border-slate-200 dark:border-[#1e1f25] rounded-lg p-8 text-center space-y-2 shadow-xs">
+              <Sparkles className="w-8 h-8 text-blue-600 dark:text-[#adc6ff] mx-auto" />
+              <p className="text-sm font-mono font-semibold text-slate-900 dark:text-[#e3e1e9]">
+                No saved build blueprints
+              </p>
+              <p className="text-xs text-slate-500 dark:text-[#8c909f] font-mono">
+                Use the AI Idea Generator in the sidebar to architect a build plan and save it directly to Supabase.
               </p>
             </div>
           ) : (
             userData.savedSpecs.map((spec) => (
               <div
                 key={spec.id}
-                className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 shadow-xl space-y-4"
+                className="bg-white dark:bg-[#0d0e13] border border-slate-200 dark:border-[#1e1f25] rounded-lg p-5 shadow-xs space-y-4"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-950/40 text-emerald-400 border border-emerald-500/30">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-blue-50 dark:bg-[#292a2f] text-blue-600 dark:text-[#adc6ff] border border-blue-200/70 dark:border-transparent font-medium">
                         {spec.domain}
                       </span>
-                      <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-950 text-zinc-400 border border-zinc-800">
+                      <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-[#1a1b21] text-slate-600 dark:text-[#c2c6d6] border border-slate-200 dark:border-[#292a2f]">
                         {spec.difficulty}
                       </span>
-                      <span className="text-[11px] font-mono text-zinc-500">
+                      <span className="text-[11px] font-mono text-slate-400 dark:text-[#8c909f]">
                         Saved in Supabase
                       </span>
                     </div>
-                    <h4 className="text-sm font-bold text-zinc-100">{spec.title}</h4>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-[#e3e1e9]">
+                      {spec.title}
+                    </h4>
                   </div>
 
                   <button
                     onClick={() => onRemoveSavedSpec(spec.id)}
-                    className="p-1.5 text-zinc-500 hover:text-rose-400 rounded transition-colors"
+                    className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded transition-colors"
                     title="Remove from saved specs"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
 
-                <p className="text-xs text-zinc-400 font-mono bg-zinc-950 p-3 rounded-lg border border-zinc-800">
+                <p className="text-xs text-slate-700 dark:text-[#c2c6d6] font-mono bg-[#e8eef5]/60 dark:bg-[#1a1b21] p-3 rounded-md border border-slate-300/60 dark:border-[#292a2f]">
                   {spec.problemStatement}
                 </p>
 
                 {/* BOM Summary */}
                 <div>
-                  <div className="text-[11px] font-mono font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">
+                  <div className="text-[11px] font-mono font-semibold text-slate-500 dark:text-[#8c909f] uppercase tracking-wider mb-1.5">
                     Hardware BOM:
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     {spec.bom.map((b, idx) => (
                       <div
                         key={idx}
-                        className="p-2.5 bg-zinc-950 rounded border border-zinc-800 text-[11px] font-mono"
+                        className="p-2.5 bg-slate-50 dark:bg-[#1a1b21] rounded-md border border-slate-200 dark:border-[#292a2f] text-[11px] font-mono"
                       >
-                        <div className="font-bold text-zinc-200">{b.item}</div>
-                        <div className="text-zinc-500 text-[10px] mt-0.5">{b.purpose}</div>
-                        <div className="text-emerald-400 font-semibold mt-1">{b.estimatedCost}</div>
+                        <div className="font-bold text-slate-900 dark:text-[#e3e1e9]">
+                          {b.item}
+                        </div>
+                        <div className="text-slate-500 dark:text-[#8c909f] text-[10px] mt-0.5">
+                          {b.purpose}
+                        </div>
+                        <div className="text-blue-600 dark:text-[#adc6ff] font-semibold mt-1 tabular-nums">
+                          {b.estimatedCost}
+                        </div>
                       </div>
                     ))}
                   </div>

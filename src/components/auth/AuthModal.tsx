@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Mail, Lock, ShieldCheck, ArrowRight, Loader2, CheckCircle2, User, AlertCircle, Cpu, Sparkles, Layers } from "lucide-react";
+import { X, Loader2, CheckCircle2, AlertCircle, Cpu } from "lucide-react";
 import { GithubIcon } from "../ui/Icons";
 import { useAuth } from "./AuthProvider";
 import { GithubSetupModal } from "./GithubSetupModal";
@@ -99,7 +99,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/80 backdrop-blur-md"
+            className="fixed inset-0 bg-slate-950/60 dark:bg-black/80 backdrop-blur-md"
           />
 
           {/* Modal Content */}
@@ -108,42 +108,44 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
             transition={{ duration: 0.2 }}
-            className="relative w-full max-w-md rounded-2xl bg-zinc-900 border border-zinc-800 p-6 sm:p-7 shadow-2xl z-10 overflow-hidden"
+            className="relative w-full max-w-md rounded-2xl bg-white dark:bg-[#102034] border border-slate-200 dark:border-slate-800 p-6 sm:p-7 shadow-2xl z-10 overflow-hidden"
           >
             {/* Ambient Corner Glow */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
 
             {/* Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-zinc-950 border border-emerald-500/30 flex items-center justify-center">
-                  <span className="font-mono font-black text-xs text-emerald-400">A</span>
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-sm shadow-blue-500/30">
+                  <Cpu className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-zinc-100">AEVORA // FORGE</h3>
-                  <p className="text-[11px] text-zinc-400 font-mono">Proof-of-Work Authentication</p>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">AEVORA // FORGE</h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                    Proof-of-Work Authentication
+                  </p>
                 </div>
               </div>
               <button
                 onClick={onClose}
-                className="p-1.5 text-zinc-400 hover:text-zinc-100 rounded-lg hover:bg-zinc-800 transition-colors"
+                className="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Mode Switcher */}
-            <div className="flex items-center p-1 bg-zinc-950 rounded-lg border border-zinc-800 my-4">
+            <div className="flex items-center p-1 bg-slate-100 dark:bg-[#000f21] rounded-lg border border-slate-200 dark:border-slate-800 my-4">
               <button
                 type="button"
                 onClick={() => {
                   setMode("signup");
                   setErrorMessage("");
                 }}
-                className={`flex-1 py-1.5 text-xs font-mono font-semibold rounded-md transition-all ${
+                className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${
                   mode === "signup"
-                    ? "bg-zinc-800 text-zinc-100 shadow-xs"
-                    : "text-zinc-400 hover:text-zinc-200"
+                    ? "bg-white dark:bg-[#1b2b3f] text-slate-900 dark:text-white shadow-xs"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
                 }`}
               >
                 Create Account
@@ -154,10 +156,10 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   setMode("signin");
                   setErrorMessage("");
                 }}
-                className={`flex-1 py-1.5 text-xs font-mono font-semibold rounded-md transition-all ${
+                className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${
                   mode === "signin"
-                    ? "bg-zinc-800 text-zinc-100 shadow-xs"
-                    : "text-zinc-400 hover:text-zinc-200"
+                    ? "bg-white dark:bg-[#1b2b3f] text-slate-900 dark:text-white shadow-xs"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
                 }`}
               >
                 Sign In
@@ -166,15 +168,15 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
             {/* Feedback */}
             {errorMessage && (
-              <div className="mb-3 p-3 rounded-lg bg-rose-950/40 border border-rose-500/30 text-rose-300 text-xs font-mono flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              <div className="mb-3 p-3 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs font-mono flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-500 dark:text-rose-400 shrink-0 mt-0.5" />
                 <span>{errorMessage}</span>
               </div>
             )}
 
             {successMessage && (
-              <div className="mb-3 p-3 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-xs font-mono flex items-start gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+              <div className="mb-3 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-mono flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0 mt-0.5" />
                 <span>{successMessage}</span>
               </div>
             )}
@@ -184,7 +186,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
               {mode === "signup" && (
                 <>
                   <div>
-                    <label className="block text-[10px] text-zinc-400 uppercase tracking-wider mb-1">
+                    <label className="block text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
                       Full Name
                     </label>
                     <input
@@ -192,13 +194,13 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder="Ada Lovelace"
-                      className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-100 focus:outline-hidden focus:border-emerald-500 font-sans"
+                      className="w-full px-3 py-2 bg-white dark:bg-[#000f21] border border-slate-200 dark:border-slate-700/80 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 font-sans"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] text-zinc-400 uppercase tracking-wider mb-1">
+                    <label className="block text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
                       Username (@handle)
                     </label>
                     <input
@@ -206,19 +208,19 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       placeholder="lovelace"
-                      className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-100 focus:outline-hidden focus:border-emerald-500"
+                      className="w-full px-3 py-2 bg-white dark:bg-[#000f21] border border-slate-200 dark:border-slate-700/80 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] text-zinc-400 uppercase tracking-wider mb-1">
+                    <label className="block text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
                       Primary Role
                     </label>
                     <select
                       value={role}
                       onChange={(e) => setRole(e.target.value)}
-                      className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-200 focus:outline-hidden focus:border-emerald-500"
+                      className="w-full px-3 py-2 bg-white dark:bg-[#000f21] border border-slate-200 dark:border-slate-700/80 rounded-lg text-slate-900 dark:text-slate-200 focus:outline-hidden focus:border-blue-600"
                     >
                       <option value="Hardware Hacker">Hardware Hacker</option>
                       <option value="AI Engineer">AI Engineer</option>
@@ -229,7 +231,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
               )}
 
               <div>
-                <label className="block text-[10px] text-zinc-400 uppercase tracking-wider mb-1">
+                <label className="block text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
                   Email
                 </label>
                 <input
@@ -237,13 +239,13 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="builder@aevora.dev"
-                  className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-100 focus:outline-hidden focus:border-emerald-500"
+                  className="w-full px-3 py-2 bg-white dark:bg-[#000f21] border border-slate-200 dark:border-slate-700/80 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] text-zinc-400 uppercase tracking-wider mb-1">
+                <label className="block text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
                   Password
                 </label>
                 <input
@@ -252,7 +254,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
                   minLength={6}
-                  className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-100 focus:outline-hidden focus:border-emerald-500"
+                  className="w-full px-3 py-2 bg-white dark:bg-[#000f21] border border-slate-200 dark:border-slate-700/80 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
                   required
                 />
               </div>
@@ -260,7 +262,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 mt-2 shadow-xs"
+                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 mt-2 shadow-sm shadow-blue-600/25 font-sans"
               >
                 {isSubmitting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -273,10 +275,12 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             {/* Divider */}
             <div className="relative my-4">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-zinc-800" />
+                <div className="w-full border-t border-slate-200 dark:border-slate-700/80" />
               </div>
               <div className="relative flex justify-center text-[10px] font-mono uppercase">
-                <span className="bg-zinc-900 px-2 text-zinc-500">Or continue with</span>
+                <span className="bg-white dark:bg-[#102034] px-2 text-slate-400 dark:text-slate-500">
+                  Or continue with
+                </span>
               </div>
             </div>
 
@@ -285,9 +289,9 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
               type="button"
               disabled={isGithubLoading}
               onClick={handleGithubClick}
-              className="w-full py-2 px-4 bg-zinc-950 hover:bg-zinc-800 disabled:opacity-50 border border-zinc-800 text-zinc-200 text-xs font-mono font-medium rounded-lg transition-all flex items-center justify-center gap-2"
+              className="w-full py-2.5 px-4 bg-slate-50 dark:bg-[#000f21] hover:bg-slate-100 dark:hover:bg-slate-800/80 disabled:opacity-50 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg transition-all flex items-center justify-center gap-2"
             >
-              <GithubIcon className="w-4 h-4 text-zinc-400" />
+              <GithubIcon className="w-4 h-4" />
               <span>{isGithubLoading ? "Checking GitHub Provider..." : "Continue with GitHub"}</span>
             </button>
           </motion.div>

@@ -683,16 +683,18 @@ export default function AevoraCommunityPage() {
   // =========================================================================
   if (isAuthLoading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center space-y-4">
-        <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-emerald-500/30 flex items-center justify-center animate-pulse">
-          <span className="font-mono font-black text-sm text-emerald-400">A</span>
+      <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center space-y-4">
+        <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-600/30 animate-pulse">
+          <span className="font-mono font-black text-sm">A</span>
         </div>
-        <p className="text-xs font-mono text-zinc-500">Connecting to Aevora Forge...</p>
+        <p className="text-xs font-mono text-slate-500 dark:text-[#8c909f]">
+          Connecting to Aevora Forge...
+        </p>
       </div>
     );
   }
 
-  // If not logged in, render the sleek dark-mode Auth & Onboarding Screen
+  // If not logged in, render the calibrated Light/Dark Minimalist Blue Gateway
   if (!user || !session) {
     return <AevoraAuthGate />;
   }
@@ -707,11 +709,14 @@ export default function AevoraCommunityPage() {
       profile?.avatar_url ||
       `https://api.dicebear.com/7.x/bottts/svg?seed=${currentUsername}`,
     streakCount: profile?.streak_count || 1,
-    totalShips: profile?.ship_count || posts.filter((p) => p.author.username === currentUsername).length,
+    totalShips:
+      profile?.ship_count || posts.filter((p) => p.author.username === currentUsername).length,
     xpPoints:
-      ((profile?.ship_count || 0) * 100) +
-      ((profile?.streak_count || 1) * 50),
-    bio: profile?.bio || "Hardware and systems engineer logging verifiable proof of work on Aevora Forge.",
+      (profile?.ship_count || 0) * 100 +
+      (profile?.streak_count || 1) * 50,
+    bio:
+      profile?.bio ||
+      "Hardware and systems engineer logging verifiable proof of work on Aevora Forge.",
     techStack: profile?.tech_stack || ["ESP32", "KiCad", "Rust", "Next.js"],
     githubUrl: profile?.github_url || `https://github.com/${currentUsername}`,
     discordHandle: profile?.discord_handle || `${currentUsername}#0001`,
@@ -726,49 +731,42 @@ export default function AevoraCommunityPage() {
       label: "Live Ship Feed & Forums",
       icon: Radio,
       badge: `${posts.length}`,
-      accent: "text-emerald-400",
     },
     {
       id: "projects" as ViewMode,
       label: "Project Showcase & Collab",
       icon: Rocket,
       badge: `${projects.length}`,
-      accent: "text-blue-400",
     },
     {
       id: "challenges" as ViewMode,
       label: "Sprints & Challenges",
       icon: Zap,
-      badge: `${challenges.filter((c) => c.status === "active").length} Live`,
-      accent: "text-amber-400",
+      badge: `${challenges.filter((c) => c.status === "active").length} Active`,
     },
     {
       id: "blueprints" as ViewMode,
       label: "Blueprint Library & Tools",
       icon: Layers,
       badge: `${blueprints.length || 4}`,
-      accent: "text-indigo-400",
     },
     {
       id: "ai-generator" as ViewMode,
       label: "AI Idea Generator",
       icon: Sparkles,
       badge: "AI",
-      accent: "text-purple-400",
     },
     {
       id: "leaderboard" as ViewMode,
       label: "Monthly Leaderboards",
       icon: Trophy,
       badge: "#1",
-      accent: "text-amber-400",
     },
     {
       id: "dashboard" as ViewMode,
       label: "My Builder Dashboard",
       icon: User,
       badge: `${currentUserData.streakCount}d`,
-      accent: "text-emerald-400",
     },
   ];
 
@@ -785,20 +783,28 @@ export default function AevoraCommunityPage() {
   const activeSprint = challenges.find((c) => c.status === "active") || challenges[0];
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 selection:bg-emerald-500/20 selection:text-emerald-400">
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    <div className="min-h-screen bg-[#f1f5f9] dark:bg-[#121318] text-slate-900 dark:text-[#e3e1e9] transition-colors duration-200">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-4">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
           {/* ======================================================== */}
-          {/* LEFT SIDEBAR: Persistent Module Navigation & Filters   */}
+          {/* LEFT RAIL: WORKSPACE MODULES                             */}
           {/* ======================================================== */}
-          <aside className="lg:col-span-3 space-y-4 lg:sticky lg:top-20">
-            {/* Core View Switcher Card */}
-            <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-2 shadow-xl space-y-1">
-              <div className="px-3 py-2 text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500 flex items-center justify-between">
-                <span>Workspace Modules</span>
-                <span className="text-[10px] text-emerald-400">LIVE DB</span>
+          <aside className="xl:col-span-3 flex flex-col gap-3 xl:sticky xl:top-20">
+            {/* Navigation Module Card */}
+            <div className="bg-white dark:bg-[#0d0e13] border border-slate-200 dark:border-[#1e1f25] p-3.5 rounded-lg shadow-xs flex flex-col gap-2 transition-colors">
+              <div className="flex items-center justify-between px-1 py-0.5">
+                <span className="font-mono text-[11px] text-slate-500 dark:text-[#c2c6d6] uppercase tracking-widest font-semibold">
+                  Workspace
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-[#adc6ff] animate-pulse" />
+                  <span className="font-mono text-[10px] text-blue-600 dark:text-[#adc6ff] font-medium tracking-tight">
+                    LIVE NODE
+                  </span>
+                </div>
               </div>
-              <div className="space-y-0.5">
+
+              <nav className="flex flex-col gap-1 mt-1">
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeView === item.id;
@@ -809,25 +815,36 @@ export default function AevoraCommunityPage() {
                         setActiveView(item.id);
                         window.scrollTo({ top: 0, behavior: "smooth" });
                       }}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-mono font-medium transition-all ${
+                      className={`group relative w-full flex items-center justify-between px-2.5 py-2 rounded text-left transition-all ${
                         isActive
-                          ? "bg-zinc-800 text-zinc-100 font-bold border border-zinc-700 shadow-xs"
-                          : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-950"
+                          ? "bg-blue-50/80 dark:bg-[#292a2f]/60 text-blue-600 dark:text-[#adc6ff] font-medium border border-blue-100 dark:border-transparent"
+                          : "text-slate-600 dark:text-[#c2c6d6] hover:text-slate-900 dark:hover:text-[#e3e1e9] hover:bg-slate-50 dark:hover:bg-[#1a1b21]"
                       }`}
                     >
-                      <div className="flex items-center gap-2.5 truncate">
+                      {isActive && (
+                        <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-blue-600 dark:bg-[#adc6ff] rounded-full" />
+                      )}
+                      <div className={`flex items-center gap-2.5 truncate ${isActive ? "pl-1" : ""}`}>
                         <Icon
                           className={`w-4 h-4 shrink-0 ${
-                            isActive ? "text-emerald-400" : item.accent
+                            isActive
+                              ? "text-blue-600 dark:text-[#adc6ff]"
+                              : "text-slate-400 dark:text-[#8c909f] group-hover:text-blue-600 dark:group-hover:text-[#adc6ff]"
                           }`}
                         />
-                        <span className="truncate">{item.label}</span>
+                        <span
+                          className={`text-[13px] truncate ${
+                            isActive ? "text-slate-900 dark:text-[#e3e1e9] font-semibold" : "font-medium"
+                          }`}
+                        >
+                          {item.label}
+                        </span>
                       </div>
                       <span
-                        className={`text-[10px] font-mono px-1.5 py-0.5 rounded shrink-0 ${
+                        className={`font-mono text-[11px] px-1.5 py-0.5 rounded shrink-0 tabular-nums ${
                           isActive
-                            ? "bg-zinc-900 text-emerald-400 border border-zinc-700"
-                            : "bg-zinc-950 text-zinc-500"
+                            ? "bg-blue-100 dark:bg-[#34343a] text-blue-700 dark:text-[#adc6ff] font-semibold"
+                            : "bg-slate-100 dark:bg-[#1e1f25] text-slate-500 dark:text-[#c2c6d6]"
                         }`}
                       >
                         {item.badge}
@@ -835,39 +852,40 @@ export default function AevoraCommunityPage() {
                     </button>
                   );
                 })}
-              </div>
+              </nav>
             </div>
 
-            {/* Quick Tag Filter Card */}
-            <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4 shadow-xl space-y-3">
-              <div className="flex items-center justify-between text-xs font-mono font-semibold text-zinc-400 uppercase tracking-wider">
-                <span className="flex items-center gap-1.5">
+            {/* Telemetry Filter Tags */}
+            <div className="bg-white dark:bg-[#0d0e13] border border-slate-200 dark:border-[#1e1f25] p-3.5 rounded-lg shadow-xs flex flex-col gap-2 transition-colors">
+              <div className="flex items-center justify-between px-1">
+                <span className="font-mono text-[11px] text-slate-500 dark:text-[#c2c6d6] uppercase tracking-widest font-semibold flex items-center gap-1.5">
                   <Filter className="w-3.5 h-3.5" />
                   Telemetry Tags
                 </span>
                 {selectedTag !== "all" && (
                   <button
                     onClick={() => setSelectedTag("all")}
-                    className="text-[10px] text-emerald-400 hover:underline capitalize"
+                    className="font-mono text-[11px] text-blue-600 dark:text-[#adc6ff] hover:underline"
                   >
                     Reset
                   </button>
                 )}
               </div>
 
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1.5 mt-1">
                 <button
                   onClick={() => {
                     setSelectedTag("all");
                     setActiveView("feed");
                   }}
-                  className={`text-xs px-2.5 py-1 rounded-md font-mono transition-all border ${
+                  className={`px-2 py-1 rounded font-mono text-[11px] transition-colors flex items-center gap-1 border ${
                     selectedTag === "all"
-                      ? "bg-zinc-800 text-emerald-400 border-zinc-700 font-semibold"
-                      : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-zinc-200"
+                      ? "bg-blue-50 dark:bg-[#292a2f] border-blue-200 dark:border-transparent text-blue-600 dark:text-[#adc6ff] font-medium"
+                      : "bg-slate-50 dark:bg-[#1e1f25] border-slate-200 dark:border-transparent text-slate-600 dark:text-[#c2c6d6] hover:text-slate-900 dark:hover:text-[#e3e1e9]"
                   }`}
                 >
-                  #all
+                  <span>#all</span>
+                  <span className="text-[10px] opacity-70 tabular-nums">{posts.length}</span>
                 </button>
                 {popularTags.map((tag) => (
                   <button
@@ -876,10 +894,10 @@ export default function AevoraCommunityPage() {
                       setSelectedTag(tag);
                       setActiveView("feed");
                     }}
-                    className={`text-xs px-2.5 py-1 rounded-md font-mono transition-all border ${
+                    className={`px-2 py-1 rounded font-mono text-[11px] transition-colors border ${
                       selectedTag === tag
-                        ? "bg-zinc-800 text-emerald-400 border-zinc-700 font-semibold"
-                        : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-zinc-200"
+                        ? "bg-blue-50 dark:bg-[#292a2f] border-blue-200 dark:border-transparent text-blue-600 dark:text-[#adc6ff] font-medium"
+                        : "bg-slate-50 dark:bg-[#1e1f25] border-slate-200 dark:border-transparent text-slate-600 dark:text-[#c2c6d6] hover:border-slate-300 dark:hover:bg-[#292a2f] hover:text-slate-900 dark:hover:text-[#e3e1e9]"
                     }`}
                   >
                     {tag}
@@ -888,57 +906,60 @@ export default function AevoraCommunityPage() {
               </div>
             </div>
 
-            {/* Rules & Manifesto Trigger Card */}
-            <div className="bg-zinc-900 rounded-xl p-4 border border-zinc-800 shadow-xl space-y-3">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-400">
+            {/* Proof-of-Work Standards Card */}
+            <div className="bg-white dark:bg-[#0d0e13] border border-slate-200 dark:border-[#1e1f25] p-3.5 rounded-lg shadow-xs flex flex-col gap-2 transition-colors">
+              <div className="flex items-center gap-1.5 text-blue-600 dark:text-[#adc6ff]">
+                <ShieldCheck className="w-4 h-4" />
+                <span className="font-mono text-[11px] uppercase tracking-wider font-semibold">
                   Proof-of-Work Standards
-                </h4>
+                </span>
               </div>
-              <p className="text-[11px] text-zinc-400 leading-relaxed font-mono">
-                Rule #1: Post real commits & schematics, zero vaporware. Peer review over hype.
+              <p className="text-xs text-slate-600 dark:text-[#c2c6d6] leading-relaxed">
+                Rule #1: Commit verification, serial traces, zero vaporware. All architecture logs must include verified commits or physical silicon revisions. Peer review over hype.
               </p>
               <button
                 onClick={() => setIsRulesOpen(true)}
-                className="w-full py-2 bg-zinc-950 hover:bg-zinc-800 text-zinc-300 hover:text-zinc-100 rounded-lg text-xs font-mono font-medium transition-colors border border-zinc-800 text-center"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-[#adc6ff] hover:text-blue-700 dark:hover:text-[#a4c9ff] transition-colors mt-0.5 text-left"
               >
-                Read Community Manifesto
+                <span>Read Protocol Manifesto</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            {/* Builder Account Pill */}
+            {/* Profile Mini Footer Card */}
             <div
               onClick={() => setActiveView("dashboard")}
-              className="bg-zinc-900 rounded-xl border border-zinc-800 p-3.5 shadow-xl flex items-center justify-between cursor-pointer hover:border-zinc-700 transition-colors group"
+              className="bg-white dark:bg-[#0d0e13] border border-slate-200 dark:border-[#1e1f25] p-2.5 rounded-lg shadow-xs flex items-center justify-between cursor-pointer hover:border-slate-300 dark:hover:border-[#292a2f] transition-colors group"
             >
-              <div className="flex items-center gap-3 min-w-0">
+              <div className="flex items-center gap-2.5 min-w-0">
                 <img
                   src={currentUserData.avatar}
                   alt={currentUserData.name}
-                  className="w-9 h-9 rounded-full object-cover border border-zinc-800 bg-zinc-950 shrink-0"
+                  className="w-9 h-9 rounded-full object-cover ring-1 ring-slate-200 dark:ring-[#424754] bg-slate-100 dark:bg-[#1a1b21] shrink-0"
                 />
-                <div className="min-w-0">
-                  <div className="text-xs font-bold text-zinc-200 truncate group-hover:text-emerald-400 transition-colors">
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs font-semibold text-slate-900 dark:text-[#e3e1e9] truncate group-hover:text-blue-600 dark:group-hover:text-[#adc6ff] transition-colors">
                     {currentUserData.name}
-                  </div>
-                  <div className="text-[11px] font-mono text-zinc-500 truncate">
+                  </span>
+                  <span className="font-mono text-[11px] text-slate-500 dark:text-[#8c909f] truncate">
                     @{currentUserData.username}
-                  </div>
+                  </span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-1 font-mono text-xs font-bold text-orange-400 bg-orange-950/40 px-2 py-1 rounded border border-orange-500/30 shrink-0">
-                <Flame className="w-3.5 h-3.5 fill-orange-400" />
-                <span>{currentUserData.streakCount}d</span>
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#1e1f25] border border-slate-200 dark:border-transparent px-2 py-1 rounded shrink-0">
+                <Flame className="w-3.5 h-3.5 text-blue-600 dark:text-[#adc6ff]" />
+                <span className="font-mono text-[11px] font-semibold text-slate-900 dark:text-[#e3e1e9] tabular-nums">
+                  {currentUserData.streakCount}d
+                </span>
               </div>
             </div>
           </aside>
 
           {/* ======================================================== */}
-          {/* CENTER COLUMN: Interactive Multi-View Main Workspace     */}
+          {/* CENTER WORK AREA: COMPOSER & MULTI-VIEW                  */}
           {/* ======================================================== */}
-          <main className="lg:col-span-6 space-y-6 min-w-0">
+          <main className="xl:col-span-6 space-y-4 min-w-0">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeView}
@@ -1021,42 +1042,61 @@ export default function AevoraCommunityPage() {
           </main>
 
           {/* ======================================================== */}
-          {/* RIGHT SIDEBAR: Active Sprint, Leaderboard, Actions       */}
+          {/* RIGHT RAIL: ACTIVE SPRINT, ACTIONS & FORGE TELEMETRY     */}
           {/* ======================================================== */}
-          <aside className="lg:col-span-3 space-y-4 lg:sticky lg:top-20">
+          <aside className="xl:col-span-3 flex flex-col gap-3 xl:sticky xl:top-20">
             {/* Active Sprint Widget */}
             {activeSprint && (
-              <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-5 shadow-xl space-y-4">
+              <div className="bg-white dark:bg-[#0d0e13] border border-slate-200 dark:border-[#1e1f25] p-4 rounded-lg shadow-xs space-y-4 transition-colors">
                 <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-mono font-medium bg-amber-950/40 text-amber-400 border border-amber-500/30">
-                    <Zap className="w-3.5 h-3.5 text-amber-400" />
-                    Active Sprint
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[11px] font-mono font-semibold bg-blue-50 dark:bg-[#292a2f] text-blue-600 dark:text-[#adc6ff] border border-blue-200/70 dark:border-transparent uppercase tracking-wider">
+                    <Zap className="w-3.5 h-3.5" />
+                    ACTIVE SPRINT
                   </span>
-                  <span className="text-[11px] font-mono text-zinc-400 flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-amber-400" />
+                  <span className="text-[11px] font-mono text-slate-500 dark:text-[#8c909f] flex items-center gap-1 tabular-nums">
+                    <Clock className="w-3.5 h-3.5" />
                     {activeSprintCountdown || "Live"}
                   </span>
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-bold text-zinc-100 leading-snug">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-[#e3e1e9] leading-snug">
                     {activeSprint.title}
                   </h3>
-                  <p className="text-xs text-zinc-400 mt-1 line-clamp-2 font-mono">
+                  <p className="text-xs text-slate-600 dark:text-[#8c909f] mt-1 line-clamp-2 leading-relaxed">
                     {activeSprint.tagline}
                   </p>
                 </div>
 
-                <div className="p-3 bg-zinc-950 rounded-lg border border-zinc-800 space-y-1.5">
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-zinc-500">Prize Grant:</span>
-                    <span className="font-bold text-amber-400">{activeSprint.prizePool}</span>
-                  </div>
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-zinc-500">Logged Ships:</span>
-                    <span className="font-bold text-emerald-400">
-                      {posts.filter((p) => p.challengeTag).length} verified
+                <div className="p-3 bg-slate-50 dark:bg-[#1a1b21] rounded-md border border-slate-200 dark:border-[#292a2f] space-y-2">
+                  <div className="flex justify-between items-center text-xs font-mono">
+                    <span className="text-slate-500 dark:text-[#8c909f] text-[11px]">
+                      PRIZE GRANT:
                     </span>
+                    <span className="font-bold text-blue-600 dark:text-[#adc6ff] text-sm tabular-nums">
+                      {activeSprint.prizePool}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs font-mono">
+                    <span className="text-slate-500 dark:text-[#8c909f] text-[11px]">
+                      LOGGED SHIPS:
+                    </span>
+                    <span className="font-semibold text-slate-900 dark:text-[#e3e1e9] text-[11px] tabular-nums flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-[#adc6ff]" />
+                      {posts.filter((p) => p.challengeTag).length} Verified
+                    </span>
+                  </div>
+                  {/* Progress indicator */}
+                  <div className="w-full h-1.5 bg-slate-200 dark:bg-[#292a2f] rounded-full overflow-hidden mt-1">
+                    <div
+                      className="h-full bg-blue-600 dark:bg-[#adc6ff] rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          Math.max(12, posts.filter((p) => p.challengeTag).length * 10)
+                        )}%`,
+                      }}
+                    />
                   </div>
                 </div>
 
@@ -1065,7 +1105,7 @@ export default function AevoraCommunityPage() {
                     setSelectedChallengeId(activeSprint.id);
                     setIsSubmitBuildOpen(true);
                   }}
-                  className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-mono font-bold rounded-lg transition-colors shadow-xs"
+                  className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md transition-colors shadow-xs active:scale-[0.99]"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Submit Sprint Build</span>
@@ -1074,43 +1114,90 @@ export default function AevoraCommunityPage() {
             )}
 
             {/* Quick Community Action Bar */}
-            <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4 shadow-xl space-y-2">
-              <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-500">
+            <div className="bg-white dark:bg-[#0d0e13] border border-slate-200 dark:border-[#1e1f25] p-3.5 rounded-lg shadow-xs space-y-2 transition-colors">
+              <div className="text-[11px] font-mono font-semibold uppercase tracking-widest text-slate-500 dark:text-[#c2c6d6] px-1">
                 Quick Actions
               </div>
 
               <button
                 onClick={() => setIsListProjectOpen(true)}
-                className="w-full flex items-center justify-between p-2.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-xs font-mono font-medium text-zinc-200 transition-colors text-left"
+                className="w-full flex items-center justify-between p-2.5 rounded-md bg-slate-50 dark:bg-[#1a1b21] hover:bg-slate-100 dark:hover:bg-[#292a2f] border border-slate-200 dark:border-[#292a2f] text-xs font-medium text-slate-800 dark:text-[#e3e1e9] transition-colors text-left group"
               >
                 <div className="flex items-center gap-2">
-                  <Rocket className="w-3.5 h-3.5 text-blue-400" />
-                  <span>+ List New Build</span>
+                  <Rocket className="w-3.5 h-3.5 text-blue-600 dark:text-[#adc6ff]" />
+                  <span>List New Build</span>
                 </div>
-                <ArrowRight className="w-3 h-3 text-zinc-500" />
+                <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 dark:group-hover:text-[#adc6ff] transition-colors" />
               </button>
 
               <button
                 onClick={() => setActiveView("ai-generator")}
-                className="w-full flex items-center justify-between p-2.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-xs font-mono font-medium text-zinc-200 transition-colors text-left"
+                className="w-full flex items-center justify-between p-2.5 rounded-md bg-slate-50 dark:bg-[#1a1b21] hover:bg-slate-100 dark:hover:bg-[#292a2f] border border-slate-200 dark:border-[#292a2f] text-xs font-medium text-slate-800 dark:text-[#e3e1e9] transition-colors text-left group"
               >
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                  <span>Generate AI Spec</span>
+                  <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-[#adc6ff]" />
+                  <span>AI Idea Generator</span>
                 </div>
-                <ArrowRight className="w-3 h-3 text-zinc-500" />
+                <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 dark:group-hover:text-[#adc6ff] transition-colors" />
               </button>
 
               <button
                 onClick={() => setActiveView("blueprints")}
-                className="w-full flex items-center justify-between p-2.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-xs font-mono font-medium text-zinc-200 transition-colors text-left"
+                className="w-full flex items-center justify-between p-2.5 rounded-md bg-slate-50 dark:bg-[#1a1b21] hover:bg-slate-100 dark:hover:bg-[#292a2f] border border-slate-200 dark:border-[#292a2f] text-xs font-medium text-slate-800 dark:text-[#e3e1e9] transition-colors text-left group"
               >
                 <div className="flex items-center gap-2">
-                  <Layers className="w-3.5 h-3.5 text-emerald-400" />
+                  <Layers className="w-3.5 h-3.5 text-blue-600 dark:text-[#adc6ff]" />
                   <span>Browse Hardware Grants</span>
                 </div>
-                <ArrowRight className="w-3 h-3 text-zinc-500" />
+                <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 dark:group-hover:text-[#adc6ff] transition-colors" />
               </button>
+            </div>
+
+            {/* Forge Telemetry Metrics Card */}
+            <div className="bg-white dark:bg-[#0d0e13] border border-slate-200 dark:border-[#1e1f25] p-3.5 rounded-lg shadow-xs space-y-3 transition-colors">
+              <div className="flex items-center justify-between px-0.5">
+                <span className="font-mono text-[10px] font-semibold uppercase tracking-widest text-slate-500 dark:text-[#c2c6d6]">
+                  Forge Telemetry
+                </span>
+                <span className="font-mono text-[10px] text-blue-600 dark:text-[#adc6ff] font-medium">
+                  LIVE SYNC
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-2.5 rounded-md bg-slate-50 dark:bg-[#1a1b21] border border-slate-200 dark:border-[#292a2f]">
+                  <div className="font-mono text-[10px] text-slate-500 dark:text-[#8c909f] uppercase">
+                    Verified Ships
+                  </div>
+                  <div className="font-mono text-base font-bold text-blue-600 dark:text-[#adc6ff] mt-0.5 tabular-nums">
+                    {posts.length}
+                  </div>
+                </div>
+                <div className="p-2.5 rounded-md bg-slate-50 dark:bg-[#1a1b21] border border-slate-200 dark:border-[#292a2f]">
+                  <div className="font-mono text-[10px] text-slate-500 dark:text-[#8c909f] uppercase">
+                    Listed Builds
+                  </div>
+                  <div className="font-mono text-base font-bold text-slate-900 dark:text-[#e3e1e9] mt-0.5 tabular-nums">
+                    {projects.length}
+                  </div>
+                </div>
+                <div className="p-2.5 rounded-md bg-slate-50 dark:bg-[#1a1b21] border border-slate-200 dark:border-[#292a2f]">
+                  <div className="font-mono text-[10px] text-slate-500 dark:text-[#8c909f] uppercase">
+                    Active Sprints
+                  </div>
+                  <div className="font-mono text-base font-bold text-slate-900 dark:text-[#e3e1e9] mt-0.5 tabular-nums">
+                    {challenges.filter((c) => c.status === "active").length}
+                  </div>
+                </div>
+                <div className="p-2.5 rounded-md bg-slate-50 dark:bg-[#1a1b21] border border-slate-200 dark:border-[#292a2f]">
+                  <div className="font-mono text-[10px] text-slate-500 dark:text-[#8c909f] uppercase">
+                    Node Latency
+                  </div>
+                  <div className="font-mono text-base font-bold text-slate-900 dark:text-[#e3e1e9] mt-0.5 tabular-nums">
+                    14ms
+                  </div>
+                </div>
+              </div>
             </div>
           </aside>
         </div>
