@@ -57,6 +57,7 @@ import { CollabModal } from "@/components/modals/CollabModal";
 import { ListProjectModal } from "@/components/modals/ListProjectModal";
 import { SubmitBuildModal } from "@/components/modals/SubmitBuildModal";
 import { formatCountdown } from "@/lib/utils";
+import { DUMMY_SEED_CHALLENGE_IDS } from "@/lib/data/initialData";
 
 export default function AevoraCommunityPage() {
   const { user, profile, session, isLoading: isAuthLoading, refreshProfile } = useAuth();
@@ -74,6 +75,8 @@ export default function AevoraCommunityPage() {
   const [savedSpecs, setSavedSpecs] = useState<AISpec[]>([]);
   const [collabApplications, setCollabApplications] = useState<CollabApplication[]>([]);
   const [leaderboardData, setLeaderboardData] = useState<Record<string, LeaderboardRank[]>>({});
+  const [userShipDates, setUserShipDates] = useState<string[]>([]);
+  const [buildersCount, setBuildersCount] = useState<number>(0);
 
   // Loading state for database queries
   const [isDataLoading, setIsDataLoading] = useState(true);
@@ -110,6 +113,7 @@ export default function AevoraCommunityPage() {
           tags,
           upvotes_count,
           type,
+          challenge_id,
           created_at,
           author_id,
           profiles:author_id (
@@ -164,7 +168,7 @@ export default function AevoraCommunityPage() {
               name: author.full_name || authorUser,
               username: authorUser,
               avatar: author.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${authorUser}`,
-              streak: author.streak_count || 1,
+              streak: author.streak_count ?? 0,
             },
             content: c.content,
             timestamp: new Date(c.created_at).toLocaleDateString(undefined, {
@@ -180,6 +184,11 @@ export default function AevoraCommunityPage() {
       }
 
       if (logsData) {
+        const myDates = logsData
+          .filter((log: any) => log.author_id === user.id && log.created_at)
+          .map((log: any) => log.created_at);
+        setUserShipDates(myDates);
+
         const mappedPosts: ShipPost[] = logsData.map((log: any) => {
           const authorProfile = log.profiles || {};
           const authorUser = authorProfile.username || "builder";
@@ -192,7 +201,7 @@ export default function AevoraCommunityPage() {
               avatar:
                 authorProfile.avatar_url ||
                 `https://api.dicebear.com/7.x/bottts/svg?seed=${authorUser}`,
-              streak: authorProfile.streak_count || 1,
+              streak: authorProfile.streak_count ?? 0,
               badge: authorProfile.role || "Builder",
             },
             content: log.content,
@@ -274,27 +283,32 @@ export default function AevoraCommunityPage() {
         setProjects(mappedProjects);
       }
 
-      // 3. Fetch Challenges
+      // 3. Fetch Challenges (excluding legacy dummy seeds)
       const { data: challengesData } = await supabase
         .from("challenges")
         .select("*")
         .order("starts_at", { ascending: false });
 
       if (challengesData) {
-        const mappedChallenges: ChallengeItem[] = challengesData.map((c: any) => ({
+        const realChallenges = challengesData.filter(
+          (c: any) => !DUMMY_SEED_CHALLENGE_IDS.includes(c.id)
+        );
+        const mappedChallenges: ChallengeItem[] = realChallenges.map((c: any) => ({
           id: c.id,
           slug: c.slug,
           title: c.title,
-          tagline: c.tagline || c.title,
+          tagline: c.tagline || c.description,
           description: c.description,
-          prizePool: c.prize_pool || "$500 Grant",
-          rules: c.rules ? c.rules.split("\n").filter(Boolean) : ["Zero vaporware"],
+          prizePool: c.prize_pool || "",
+          rules: c.rules ? c.rules.split("\n").filter(Boolean) : [],
           status: c.status || "active",
           startsAt: c.starts_at,
           endsAt: c.ends_at,
-          submissionsCount: 0,
+          submissionsCount: logsData
+            ? logsData.filter((l: any) => l.challenge_id === c.id).length
+            : 0,
           maxSlots: 50,
-          sponsoredBy: "Aevora Grant Fund",
+          sponsoredBy: c.sponsored_by || "",
         }));
         setChallenges(mappedChallenges);
       }
@@ -398,16 +412,21 @@ export default function AevoraCommunityPage() {
         );
       }
 
-      // 7. Calculate Real Leaderboard Rankings from Profiles
+      // 7. Calculate Real Leaderboard Rankings & Builder Count from Profiles
       const { data: profilesLeaderboard } = await supabase
         .from("profiles")
         .select("id, username, full_name, avatar_url, role, ship_count, streak_count")
         .order("ship_count", { ascending: false })
-        .limit(10);
+        .limit(50);
 
       if (profilesLeaderboard && profilesLeaderboard.length > 0) {
+        const realProfiles = profilesLeaderboard.filter(
+          (p) => p.id !== "980def6d-4feb-47f2-ad37-ec3cbafe04d3"
+        );
+        setBuildersCount(realProfiles.length);
+
         const currentMonth = "November 2026";
-        const ranks: LeaderboardRank[] = profilesLeaderboard
+        const ranks: LeaderboardRank[] = realProfiles
           .filter((p) => (p.ship_count || 0) > 0 || (p.streak_count || 0) > 0)
           .map((p, index) => ({
             rank: index + 1,
@@ -417,7 +436,7 @@ export default function AevoraCommunityPage() {
               p.avatar_url ||
               `https://api.dicebear.com/7.x/bottts/svg?seed=${p.username}`,
             monthlyXP: (p.ship_count || 0) * 100 + (p.streak_count || 0) * 50,
-            streakDays: p.streak_count || 1,
+            streakDays: p.streak_count ?? 0,
             projectsShipped: p.ship_count || 0,
             upvotesReceived: 0,
             focusDomain: p.role || "Hardware & AI",
@@ -708,18 +727,16 @@ export default function AevoraCommunityPage() {
     avatar:
       profile?.avatar_url ||
       `https://api.dicebear.com/7.x/bottts/svg?seed=${currentUsername}`,
-    streakCount: profile?.streak_count || 1,
+    streakCount: profile?.streak_count ?? 0,
     totalShips:
       profile?.ship_count || posts.filter((p) => p.author.username === currentUsername).length,
     xpPoints:
       (profile?.ship_count || 0) * 100 +
-      (profile?.streak_count || 1) * 50,
-    bio:
-      profile?.bio ||
-      "Hardware and systems engineer logging verifiable proof of work on Aevora Forge.",
-    techStack: profile?.tech_stack || ["ESP32", "KiCad", "Rust", "Next.js"],
-    githubUrl: profile?.github_url || `https://github.com/${currentUsername}`,
-    discordHandle: profile?.discord_handle || `${currentUsername}#0001`,
+      (profile?.streak_count || 0) * 50,
+    bio: profile?.bio || "",
+    techStack: profile?.tech_stack || [],
+    githubUrl: profile?.github_url || "",
+    discordHandle: profile?.discord_handle || "",
     savedSpecs: savedSpecs,
     collabApplications: collabApplications,
   };
@@ -748,7 +765,7 @@ export default function AevoraCommunityPage() {
       id: "blueprints" as ViewMode,
       label: "Blueprint Library & Tools",
       icon: Layers,
-      badge: `${blueprints.length || 4}`,
+      badge: `${blueprints.length}`,
     },
     {
       id: "ai-generator" as ViewMode,
@@ -1031,6 +1048,7 @@ export default function AevoraCommunityPage() {
                     userProjects={projects.filter(
                       (p) => p.owner.username === currentUserData.username
                     )}
+                    userShipDates={userShipDates}
                     collabApplications={collabApplications}
                     onOpenListProject={() => setIsListProjectOpen(true)}
                     onUpdateAppStatus={handleUpdateAppStatus}
@@ -1046,7 +1064,7 @@ export default function AevoraCommunityPage() {
           {/* ======================================================== */}
           <aside className="xl:col-span-3 flex flex-col gap-3 xl:sticky xl:top-20">
             {/* Active Sprint Widget */}
-            {activeSprint && (
+            {activeSprint ? (
               <div className="bg-white dark:bg-[#0d0e13] border border-slate-200 dark:border-[#1e1f25] p-4 rounded-lg shadow-xs space-y-4 transition-colors">
                 <div className="flex items-center justify-between">
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[11px] font-mono font-semibold bg-blue-50 dark:bg-[#292a2f] text-blue-600 dark:text-[#adc6ff] border border-blue-200/70 dark:border-transparent uppercase tracking-wider">
@@ -1069,14 +1087,16 @@ export default function AevoraCommunityPage() {
                 </div>
 
                 <div className="p-3 bg-slate-50 dark:bg-[#1a1b21] rounded-md border border-slate-200 dark:border-[#292a2f] space-y-2">
-                  <div className="flex justify-between items-center text-xs font-mono">
-                    <span className="text-slate-500 dark:text-[#8c909f] text-[11px]">
-                      PRIZE GRANT:
-                    </span>
-                    <span className="font-bold text-blue-600 dark:text-[#adc6ff] text-sm tabular-nums">
-                      {activeSprint.prizePool}
-                    </span>
-                  </div>
+                  {activeSprint.prizePool && (
+                    <div className="flex justify-between items-center text-xs font-mono">
+                      <span className="text-slate-500 dark:text-[#8c909f] text-[11px]">
+                        PRIZE GRANT:
+                      </span>
+                      <span className="font-bold text-blue-600 dark:text-[#adc6ff] text-sm tabular-nums">
+                        {activeSprint.prizePool}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center text-xs font-mono">
                     <span className="text-slate-500 dark:text-[#8c909f] text-[11px]">
                       LOGGED SHIPS:
@@ -1093,7 +1113,7 @@ export default function AevoraCommunityPage() {
                       style={{
                         width: `${Math.min(
                           100,
-                          Math.max(12, posts.filter((p) => p.challengeTag).length * 10)
+                          posts.filter((p) => p.challengeTag).length * 10
                         )}%`,
                       }}
                     />
@@ -1110,6 +1130,26 @@ export default function AevoraCommunityPage() {
                   <Plus className="w-3.5 h-3.5" />
                   <span>Submit Sprint Build</span>
                 </button>
+              </div>
+            ) : (
+              <div className="bg-white dark:bg-[#0d0e13] border border-slate-200 dark:border-[#1e1f25] p-4 rounded-lg shadow-xs space-y-3 transition-colors">
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[11px] font-mono font-semibold bg-slate-100 dark:bg-[#1a1b21] text-slate-600 dark:text-[#8c909f] border border-slate-200 dark:border-[#292a2f] uppercase tracking-wider">
+                    <Zap className="w-3.5 h-3.5" />
+                    SPRINTS
+                  </span>
+                  <span className="text-[11px] font-mono text-slate-400 dark:text-[#8c909f]">
+                    0 Active
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-[#e3e1e9]">
+                    No Active Sprints
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-[#8c909f] mt-1 leading-relaxed">
+                    No active sprint challenges in the database yet. Log daily ships directly to the feed or list a project build.
+                  </p>
+                </div>
               </div>
             )}
 
@@ -1147,7 +1187,7 @@ export default function AevoraCommunityPage() {
               >
                 <div className="flex items-center gap-2">
                   <Layers className="w-3.5 h-3.5 text-blue-600 dark:text-[#adc6ff]" />
-                  <span>Browse Hardware Grants</span>
+                  <span>Browse Blueprint Library</span>
                 </div>
                 <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 dark:group-hover:text-[#adc6ff] transition-colors" />
               </button>
@@ -1157,10 +1197,10 @@ export default function AevoraCommunityPage() {
             <div className="bg-white dark:bg-[#0d0e13] border border-slate-200 dark:border-[#1e1f25] p-3.5 rounded-lg shadow-xs space-y-3 transition-colors">
               <div className="flex items-center justify-between px-0.5">
                 <span className="font-mono text-[10px] font-semibold uppercase tracking-widest text-slate-500 dark:text-[#c2c6d6]">
-                  Forge Telemetry
+                  Live Database Metrics
                 </span>
                 <span className="font-mono text-[10px] text-blue-600 dark:text-[#adc6ff] font-medium">
-                  LIVE SYNC
+                  SUPABASE
                 </span>
               </div>
 
@@ -1191,10 +1231,10 @@ export default function AevoraCommunityPage() {
                 </div>
                 <div className="p-2.5 rounded-md bg-slate-50 dark:bg-[#1a1b21] border border-slate-200 dark:border-[#292a2f]">
                   <div className="font-mono text-[10px] text-slate-500 dark:text-[#8c909f] uppercase">
-                    Node Latency
+                    Builders
                   </div>
                   <div className="font-mono text-base font-bold text-slate-900 dark:text-[#e3e1e9] mt-0.5 tabular-nums">
-                    14ms
+                    {buildersCount}
                   </div>
                 </div>
               </div>

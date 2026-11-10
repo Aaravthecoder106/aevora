@@ -5,7 +5,6 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Ship, Flame, Calendar, Tag } from "lucide-react";
 import { Profile, ShipLog } from "@/lib/supabase/types";
-import { SEED_PROFILES, SEED_SHIP_LOGS } from "@/lib/data/initialData";
 import { BuilderStats } from "@/components/profile/BuilderStats";
 import { ShipCard } from "@/components/feed/ShipCard";
 import { createClient } from "@/lib/supabase/client";

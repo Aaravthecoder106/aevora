@@ -303,7 +303,6 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             config={githubConfig}
             onSwitchToPassword={() => {
               setMode("signin");
-              if (!email) setEmail("ay473671@gmail.com");
             }}
           />
         </div>

@@ -3,12 +3,12 @@
 import React, { useState, useEffect } from "react";
 import { ChallengeCard } from "@/components/challenges/ChallengeCard";
 import { Challenge } from "@/lib/supabase/types";
-import { SEED_CHALLENGES } from "@/lib/data/initialData";
+import { DUMMY_SEED_CHALLENGE_IDS } from "@/lib/data/initialData";
 import { createClient } from "@/lib/supabase/client";
-import { Trophy, Flame, Sparkles, Filter } from "lucide-react";
+import { Trophy } from "lucide-react";
 
 export default function ChallengesPage() {
-  const [challenges, setChallenges] = useState<Challenge[]>(SEED_CHALLENGES);
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
   const supabase = createClient();
 
@@ -21,10 +21,13 @@ export default function ChallengesPage() {
           .order("starts_at", { ascending: false });
 
         if (data && data.length > 0) {
-          setChallenges(data as any);
+          const realChallenges = (data as any[]).filter(
+            (c) => !DUMMY_SEED_CHALLENGE_IDS.includes(c.id)
+          );
+          setChallenges(realChallenges);
         }
       } catch (err) {
-        console.warn("Using fallback challenges:", err);
+        console.warn("Failed to load challenges:", err);
       }
     }
     loadChallenges();

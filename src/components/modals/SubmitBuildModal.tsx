@@ -28,10 +28,8 @@ export function SubmitBuildModal({
   const [content, setContent] = useState("");
   const [repoUrl, setRepoUrl] = useState(profile?.github_url || "");
   const [demoUrl, setDemoUrl] = useState("");
-  const [snippetTitle, setSnippetTitle] = useState("bench_telemetry.log");
-  const [snippetBody, setSnippetBody] = useState(
-    "[  +0.012] bootloader: validated CRC32 on image\n[  +0.045] sensors: I2C bus initialized at 400kHz\n[  +0.120] payload: telemetry frame dispatched (28 bytes)"
-  );
+  const [snippetTitle, setSnippetTitle] = useState("");
+  const [snippetBody, setSnippetBody] = useState("");
 
   if (!isOpen) return null;
 
@@ -52,7 +50,7 @@ export function SubmitBuildModal({
         avatar:
           profile?.avatar_url ||
           `https://api.dicebear.com/7.x/bottts/svg?seed=${authorUsername}`,
-        streak: (profile?.streak_count || 0) + 1,
+        streak: profile?.streak_count ?? 0,
         badge: "Sprint Contender",
       },
       content: content.trim(),

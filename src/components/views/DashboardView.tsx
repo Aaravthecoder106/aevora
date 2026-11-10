@@ -27,6 +27,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 interface DashboardViewProps {
   userData: UserDashboardData;
   userProjects: ProjectItem[];
+  userShipDates?: string[];
   collabApplications: CollabApplication[];
   onOpenListProject: () => void;
   onUpdateAppStatus: (appId: string, status: "Accepted" | "Declined") => void;
@@ -36,6 +37,7 @@ interface DashboardViewProps {
 export function DashboardView({
   userData,
   userProjects,
+  userShipDates = [],
   collabApplications,
   onOpenListProject,
   onUpdateAppStatus,
@@ -44,12 +46,24 @@ export function DashboardView({
   const { signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<"projects" | "collabs" | "specs">("projects");
 
+  const today = new Date();
+  const dateCounts: Record<string, number> = {};
+  userShipDates.forEach((rawDate) => {
+    const parsed = new Date(rawDate);
+    if (!isNaN(parsed.getTime())) {
+      const key = parsed.toISOString().slice(0, 10);
+      dateCounts[key] = (dateCounts[key] || 0) + 1;
+    }
+  });
+
   const heatmapDays = Array.from({ length: 84 }, (_, i) => {
-    const isRecent = i >= 84 - (userData.streakCount || 1);
-    const count = isRecent ? 2 : (i * 7 + 13) % 9 > 6 ? 1 : 0;
+    const d = new Date(today);
+    d.setDate(today.getDate() - (83 - i));
+    const key = d.toISOString().slice(0, 10);
     return {
       dayIndex: i,
-      count,
+      date: key,
+      count: dateCounts[key] || 0,
     };
   });
 
@@ -212,7 +226,7 @@ export function DashboardView({
                 <div
                   key={d.dayIndex}
                   className={`w-3.5 h-3.5 rounded-xs transition-transform hover:scale-125 ${bgClass}`}
-                  title={`${d.count} verified ships`}
+                  title={`${d.date}: ${d.count} verified ships`}
                 />
               );
             })}

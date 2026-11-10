@@ -15,7 +15,7 @@ import {
   Filter,
 } from "lucide-react";
 import { Challenge, ShipLog } from "@/lib/supabase/types";
-import { SEED_CHALLENGES, SEED_SHIP_LOGS } from "@/lib/data/initialData";
+import { DUMMY_SEED_CHALLENGE_IDS } from "@/lib/data/initialData";
 import { formatCountdown } from "@/lib/utils";
 import { ShipCard } from "@/components/feed/ShipCard";
 import { ShipComposer } from "@/components/feed/ShipComposer";
@@ -44,11 +44,13 @@ function ChallengeDetailContent() {
           .eq("slug", slug)
           .single();
 
-        const activeChallenge: Challenge =
-          dbChallenge ||
-          SEED_CHALLENGES.find((c) => c.slug === slug) ||
-          SEED_CHALLENGES[0];
+        if (!dbChallenge || DUMMY_SEED_CHALLENGE_IDS.includes((dbChallenge as any).id)) {
+          setChallenge(null);
+          setSubmissions([]);
+          return;
+        }
 
+        const activeChallenge = dbChallenge as Challenge;
         setChallenge(activeChallenge);
 
         // Fetch submissions for this challenge
@@ -63,7 +65,7 @@ function ChallengeDetailContent() {
           setSubmissions([]);
         }
       } catch (err) {
-        console.warn("Using fallback challenge data:", err);
+        console.warn("Failed to load challenge data:", err);
       } finally {
         setIsLoading(false);
       }
@@ -74,10 +76,27 @@ function ChallengeDetailContent() {
     }
   }, [slug]);
 
-  if (!challenge) {
+  if (isLoading) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-16 text-center">
-        <p className="text-zinc-500 font-mono text-sm">Loading sprint brief...</p>
+        <p className="text-slate-500 dark:text-zinc-500 font-mono text-sm">Loading sprint brief...</p>
+      </div>
+    );
+  }
+
+  if (!challenge) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-16 text-center space-y-3">
+        <p className="text-slate-700 dark:text-zinc-300 font-mono text-sm font-semibold">
+          Sprint not found
+        </p>
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-xs font-mono text-blue-600 dark:text-blue-400 hover:underline"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Return to Workspace</span>
+        </Link>
       </div>
     );
   }

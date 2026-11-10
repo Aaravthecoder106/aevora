@@ -80,15 +80,15 @@ export default function RootLayout({
                 <div className="max-w-[1440px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 tracking-wide">
                   <div className="flex items-center gap-3">
                     <span className="font-semibold text-slate-800 dark:text-[#c2c6d6]">
-                      AEVORA FORGE ARCHITECTURE
+                      AEVORA // FORGE
                     </span>
                     <span className="text-slate-300 dark:text-[#424754]">·</span>
-                    <span>NODE LATENCY 14MS</span>
+                    <span>Supabase Realtime Database</span>
                     <span className="text-slate-300 dark:text-[#424754]">·</span>
-                    <span className="text-emerald-600 dark:text-emerald-400">STATUS OK</span>
+                    <span className="text-emerald-600 dark:text-emerald-400">CONNECTED</span>
                   </div>
                   <div>
-                    <span>© 2026 Aevora Systems. Hardware, Systems &amp; AI Telemetry.</span>
+                    <span>Proof-of-Work Hardware &amp; AI Community</span>
                   </div>
                 </div>
               </footer>

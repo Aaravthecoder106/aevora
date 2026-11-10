@@ -19,6 +19,7 @@ import {
 import { GithubIcon } from "@/components/ui/Icons";
 import { useAuth } from "./AuthProvider";
 import { supabase } from "@/lib/supabase";
+import { DUMMY_SEED_CHALLENGE_IDS } from "@/lib/data/initialData";
 import { GithubSetupModal } from "./GithubSetupModal";
 
 export function AevoraAuthGate() {
@@ -43,7 +44,7 @@ export function AevoraAuthGate() {
 
   // Live platform stats from Supabase
   const [stats, setStats] = useState({
-    activeSprints: 2,
+    activeSprints: 0,
     totalShips: 0,
     activeProjects: 0,
   });
@@ -56,14 +57,18 @@ export function AevoraAuthGate() {
           supabase.from("projects").select("id", { count: "exact", head: true }),
           supabase
             .from("challenges")
-            .select("id", { count: "exact", head: true })
+            .select("id")
             .eq("status", "active"),
         ]);
+
+        const realActiveSprints = (sprintsRes.data || []).filter(
+          (c: { id: string }) => !DUMMY_SEED_CHALLENGE_IDS.includes(c.id)
+        ).length;
 
         setStats({
           totalShips: shipsRes.count || 0,
           activeProjects: projectsRes.count || 0,
-          activeSprints: sprintsRes.count || 2,
+          activeSprints: realActiveSprints,
         });
       } catch {
         // Silent fallback
@@ -156,11 +161,11 @@ export function AevoraAuthGate() {
           <div className="flex items-center space-x-2.5 w-fit bg-white/80 dark:bg-[#0b1c30] border border-slate-200/80 dark:border-slate-800/80 px-3.5 py-1.5 rounded-full shadow-xs backdrop-blur-sm">
             <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
             <span className="font-mono text-[11px] font-medium text-blue-600 dark:text-blue-400 tracking-wider uppercase">
-              AEVORA // FORGE GATEWAY V2.8
+              AEVORA // FORGE GATEWAY
             </span>
             <span className="text-slate-300 dark:text-slate-700 text-xs">/</span>
             <span className="font-mono text-[11px] text-slate-500 dark:text-slate-400">
-              EPOCH 042
+              LIVE REGISTRY
             </span>
           </div>
 
@@ -193,7 +198,7 @@ export function AevoraAuthGate() {
                 </span>
               </div>
               <span className="font-mono text-[11px] text-slate-400 dark:text-slate-500">
-                Epoch 042 / Global
+                Supabase Challenges
               </span>
             </div>
 
@@ -210,7 +215,7 @@ export function AevoraAuthGate() {
                 </span>
               </div>
               <span className="font-mono text-[11px] text-blue-600/80 dark:text-blue-400/80">
-                Realtime DB Verified
+                Verified Ship Logs
               </span>
             </div>
 
@@ -227,7 +232,7 @@ export function AevoraAuthGate() {
                 </span>
               </div>
               <span className="font-mono text-[11px] text-slate-400 dark:text-slate-500">
-                ARM64 • RISC-V • CUDA
+                Community Registry
               </span>
             </div>
           </div>
@@ -281,11 +286,11 @@ export function AevoraAuthGate() {
           <div className="flex flex-wrap items-center gap-5 pt-2 border-t border-slate-200/60 dark:border-slate-800/60">
             <div className="flex items-center space-x-1.5 text-slate-500 dark:text-slate-400 font-mono text-xs">
               <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <span>Cryptographic Log Signatures</span>
+              <span>Supabase Row-Level Security</span>
             </div>
             <div className="flex items-center space-x-1.5 text-slate-500 dark:text-slate-400 font-mono text-xs">
               <Terminal className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <span>GDB / OpenOCD Linked</span>
+              <span>Live Postgres Telemetry</span>
             </div>
           </div>
         </div>
@@ -532,9 +537,9 @@ export function AevoraAuthGate() {
             <div className="mt-6 pt-3 border-t border-slate-100 dark:border-slate-800 -mx-6 sm:-mx-8 -mb-6 sm:-mb-8 px-6 sm:px-8 py-3 bg-slate-50/70 dark:bg-[#000f21]/60 flex items-center justify-between font-mono text-[11px] text-slate-400 dark:text-slate-500">
               <span className="flex items-center space-x-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <span>TLS 1.3 Encrypted</span>
+                <span>Supabase Auth Secured</span>
               </span>
-              <span>FORGE PROTOCOL v2.8</span>
+              <span>AEVORA // FORGE</span>
             </div>
           </div>
         </div>
@@ -547,7 +552,6 @@ export function AevoraAuthGate() {
         config={githubConfig}
         onSwitchToPassword={() => {
           setMode("signin");
-          if (!email) setEmail("ay473671@gmail.com");
         }}
       />
     </div>

@@ -21,12 +21,12 @@ export function ListProjectModal({
   const [tagline, setTagline] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<"Prototype" | "Beta" | "Shipped">("Prototype");
-  const [techStackInput, setTechStackInput] = useState("ESP32-S3, KiCad, C++, Next.js");
+  const [techStackInput, setTechStackInput] = useState("");
   const [repoUrl, setRepoUrl] = useState("");
   const [demoUrl, setDemoUrl] = useState("");
   const [lookingForCollab, setLookingForCollab] = useState(true);
-  const [openRoleTitle, setOpenRoleTitle] = useState("Firmware Kernel Dev");
-  const [openRoleSkills, setOpenRoleSkills] = useState("FreeRTOS, SPI, C");
+  const [openRoleTitle, setOpenRoleTitle] = useState("");
+  const [openRoleSkills, setOpenRoleSkills] = useState("");
   const [openRoleSlots] = useState(1);
 
   if (!isOpen) return null;

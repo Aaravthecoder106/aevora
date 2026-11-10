@@ -46,7 +46,7 @@ export function Navbar() {
           <div className="flex items-center space-x-3">
             <div className="hidden sm:flex items-center space-x-2 px-3 py-1 bg-white/70 dark:bg-[#102034]/70 border border-slate-200/80 dark:border-slate-800 rounded-full text-[11px] font-mono text-slate-500 dark:text-slate-400 backdrop-blur-sm shadow-xs">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>SILICON_NODE_04</span>
+              <span>SUPABASE_AUTH</span>
             </div>
 
             {/* Light/Dark Switch Button */}
@@ -92,7 +92,7 @@ export function Navbar() {
                   AEVORA
                 </span>
                 <span className="font-mono text-[11px] text-slate-500 dark:text-[#c2c6d6] bg-[#e8eef5] dark:bg-[#1e1f25] border border-slate-300/50 dark:border-transparent px-1.5 py-0.5 rounded">
-                  / FORGE v2.5
+                  / FORGE
                 </span>
               </div>
             </Link>
@@ -100,7 +100,7 @@ export function Navbar() {
             <div className="hidden xl:flex items-center gap-1.5 bg-slate-50 dark:bg-[#1a1b21] border border-slate-200 dark:border-[#292a2f] px-2.5 py-1 rounded">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-[#4d8eff] animate-pulse" />
               <span className="font-mono text-[11px] text-slate-500 dark:text-[#c2c6d6]">
-                Sprint #04 Active · Hardware &amp; AI Node
+                Live Workspace · Supabase Connected
               </span>
             </div>
           </div>
@@ -141,7 +141,7 @@ export function Navbar() {
             <div className="hidden sm:flex items-center gap-1.5 bg-slate-50 dark:bg-[#1a1b21] border border-slate-200 dark:border-[#292a2f] px-2.5 py-1 rounded text-xs font-mono font-medium">
               <Flame className="w-3.5 h-3.5 text-blue-600 dark:text-[#adc6ff]" />
               <span className="text-slate-900 dark:text-[#e3e1e9] tabular-nums">
-                {profile?.streak_count || 1}d Streak
+                {profile?.streak_count ?? 0}d Streak
               </span>
             </div>
 
